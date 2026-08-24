@@ -123,11 +123,12 @@ form.addEventListener("submit", (event) => {
 
   window.setTimeout(() => {
     showNotice(
-      `Welcome, ${usernameInput.value.trim()}! Your form is ready to connect to an account API.`,
+      `Welcome, ${usernameInput.value.trim()}! Opening your portfolio…`,
       "success",
     );
-    submitButton.disabled = false;
-    submitButton.querySelector("span").textContent = "Create account";
+    window.setTimeout(() => {
+      window.location.href = "dashboard.html";
+    }, 500);
   }, 700);
 });
 
