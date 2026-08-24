@@ -8,22 +8,28 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="dashboard.css" />
+    <style>
+      .dashboard-actions { display: flex; align-items: center; gap: 10px; }
+      .sign-out { padding: 10px 12px; border: 1px solid #e5ebe6; border-radius: 8px; color: #4d6257; background: #fff; font-size: 12px; font-weight: 700; }
+    </style>
   </head>
   <body>
     <div class="app-shell">
       <aside class="sidebar">
         <a class="brand" href="dashboard.html"><span class="brand-mark">●</span>legofolio</a>
         <nav><a class="nav-link active" href="#overview">⌂ <span>Dashboard</span></a><a class="nav-link" href="#holdings">▦ <span>My collection</span></a><a class="nav-link" href="#watchlist">☆ <span>Watchlist</span></a><a class="nav-link" href="#market">↗ <span>Market explorer</span></a></nav>
-        <div class="profile"><span class="avatar">TB</span><span><strong>Trevor B.</strong><small>Collector</small></span></div>
+        <div class="profile"><span class="avatar">TB</span><span><strong id="profile-name">Collector</strong><small>Collector</small></span></div>
       </aside>
       <main id="overview">
-        <header class="topbar"><div><p class="eyebrow">COLLECTION OVERVIEW</p><h1>Good afternoon, Trevor.</h1></div><button class="add-button" id="add-set">+ Add a set</button></header>
+        <header class="topbar"><div><p class="eyebrow">COLLECTION OVERVIEW</p><h1 id="welcome-message">Good afternoon.</h1></div><div class="dashboard-actions"><button class="sign-out" id="sign-out">Sign out</button><button class="add-button" id="add-set">+ Add a set</button></div></header>
         <section class="hero"><div><p class="eyebrow">TOTAL COLLECTION VALUE</p><h2 id="total-value">$2,847.50</h2><p class="positive">↗ $184.20 <span>(+6.9%) all time</span></p></div><div class="sparkline"><span>COLLECTION VALUE</span><svg viewBox="0 0 400 100" preserveAspectRatio="none"><path d="M0 85 C35 72 51 81 80 61 S134 72 165 45 S220 60 247 31 S309 52 340 20 S373 29 400 7 L400 100H0Z" fill="#bceecb"/><path d="M0 85 C35 72 51 81 80 61 S134 72 165 45 S220 60 247 31 S309 52 340 20 S373 29 400 7" fill="none" stroke="#167b48" stroke-width="3"/></svg></div></section>
         <section class="stats"><article><p>SETS OWNED</p><strong id="set-count">12</strong><span>+2 this month</span></article><article><p>MINIFIGURES</p><strong>86</strong><span>12 rare figures</span></article><article><p>UNREALIZED GAIN</p><strong class="positive">+$528.30</strong><span>vs. your cost basis</span></article><article><p>BEST PERFORMER</p><strong>+42.6%</strong><span>Rivendell™</span></article></section>
         <section class="layout"><section class="panel" id="holdings"><header><div><p class="eyebrow">YOUR PORTFOLIO</p><h2>Top holdings</h2></div><button>View all →</button></header><div id="holdings-list"></div></section><aside><section class="panel" id="watchlist"><header><div><p class="eyebrow">ON YOUR RADAR</p><h2>Watchlist</h2></div></header><div id="watchlist-list"></div></section><section class="panel mix"><p class="eyebrow">BY CATEGORY</p><h2>Collection mix</h2><div class="mix-content"><div class="donut">100<small>%</small></div><p>● Sets <b>68%</b><br />● Minifigures <b>22%</b><br />● Parts <b>10%</b></p></div></section></aside></section>
       </main>
     </div>
     <dialog id="dialog"><form method="dialog"><h2>Add to collection</h2><label>Set name<input id="new-name" value="The Mandalorian N-1 Starfighter™" /></label><label>Current value<input id="new-value" type="number" min="0" step="0.01" value="59.99" /></label><menu><button value="cancel">Cancel</button><button id="save-set" value="default">Add set</button></menu></form></dialog>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
     <script src="dashboard.js"></script>
   </body>
 </html>

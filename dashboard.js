@@ -4,6 +4,19 @@ const holdings = [
   ["The Razor Crest™", "75292", 184.95, "+42.3%", "✦"],
   ["Lion Knights' Castle", "10305", 399.99, "0.0%", "♜"],
 ];
+
+async function loadSignedInUser() {
+  const { data: { session } } = await window.supabaseClient.auth.getSession();
+
+  if (!session) {
+    window.location.replace("index.html");
+    return;
+  }
+
+  const username = session.user.user_metadata.username || session.user.email.split("@")[0];
+  document.querySelector("#profile-name").textContent = username;
+  document.querySelector("#welcome-message").textContent = `Good afternoon, ${username}.`;
+}
 const watchlist = [["The Milky Way Galaxy", "$164.99", "+8.4%"], ["Medieval Town Square", "$229.99", "+4.1%"], ["Wolfpack Beastmaster", "$18.50", "−2.2%"]];
 const price = (value) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value);
 function render() {
@@ -15,4 +28,9 @@ function render() {
 const dialog = document.querySelector("#dialog");
 document.querySelector("#add-set").addEventListener("click", () => dialog.showModal());
 document.querySelector("#save-set").addEventListener("click", () => { const name = document.querySelector("#new-name").value.trim(); const value = Number(document.querySelector("#new-value").value); if (name && value >= 0) { holdings.unshift([name, "New", value, "0.0%", "◆"]); render(); } });
+document.querySelector("#sign-out").addEventListener("click", async () => {
+  await window.supabaseClient.auth.signOut();
+  window.location.replace("index.html");
+});
 render();
+loadSignedInUser();

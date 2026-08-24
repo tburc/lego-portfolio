@@ -7,6 +7,7 @@ const passwordToggle = document.querySelector(".password-toggle");
 const passwordMeter = document.querySelector(".password-meter");
 const passwordHint = document.querySelector("#password-hint");
 const googleButton = document.querySelector("#google-signup");
+const signInButton = document.querySelector("#signin-button");
 const notice = document.querySelector("#notice");
 
 const fields = {
@@ -100,7 +101,7 @@ termsInput.addEventListener("change", () => {
   clearNotice();
 });
 
-form.addEventListener("submit", (event) => {
+form.addEventListener("submit", async (event) => {
   event.preventDefault();
   clearNotice();
 
@@ -121,21 +122,63 @@ form.addEventListener("submit", (event) => {
   submitButton.disabled = true;
   submitButton.querySelector("span").textContent = "Creating account…";
 
-  window.setTimeout(() => {
+  try {
+    const { data, error } = await window.supabaseClient.auth.signUp({
+      email: emailInput.value.trim(),
+      password: passwordInput.value,
+      options: { data: { username: usernameInput.value.trim() } },
+    });
+
+    if (error) throw error;
+
+    if (data.session) {
+      window.location.href = "dashboard.html";
+      return;
+    }
+
     showNotice(
-      `Welcome, ${usernameInput.value.trim()}! Opening your portfolio…`,
+      "Check your email to confirm your account, then sign in to view your portfolio.",
       "success",
     );
-    window.setTimeout(() => {
-      window.location.href = "dashboard.html";
-    }, 500);
-  }, 700);
+  } catch (error) {
+    showNotice(error.message || "We could not create your account. Please try again.", "info");
+  } finally {
+    submitButton.disabled = false;
+    submitButton.querySelector("span").textContent = "Create account";
+  }
 });
 
 googleButton.addEventListener("click", () => {
   clearNotice();
   showNotice(
-    "Google sign-up is ready for your OAuth client ID and backend callback.",
+    "Google sign-in needs to be enabled in Supabase before it can be used.",
     "info",
   );
+});
+
+signInButton.addEventListener("click", async () => {
+  clearNotice();
+
+  if (!emailInput.value.trim() || !passwordInput.value) {
+    showNotice("Enter your email address and password, then choose Sign in.", "info");
+    emailInput.focus();
+    return;
+  }
+
+  signInButton.disabled = true;
+  signInButton.textContent = "Signing in…";
+
+  try {
+    const { error } = await window.supabaseClient.auth.signInWithPassword({
+      email: emailInput.value.trim(),
+      password: passwordInput.value,
+    });
+    if (error) throw error;
+    window.location.href = "dashboard.html";
+  } catch (error) {
+    showNotice(error.message || "We could not sign you in. Please try again.", "info");
+  } finally {
+    signInButton.disabled = false;
+    signInButton.textContent = "Sign in";
+  }
 });
