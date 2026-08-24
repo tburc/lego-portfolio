@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Create your account with Google or with a username, email, and password."
+    />
+    <title>Create your legofolio account</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="page-shell">
+      <section class="intro" aria-labelledby="intro-title">
+        <a class="brand" href="#" aria-label="legofolio home">
+          <span class="brand-mark" aria-hidden="true">
+            <span></span><span></span><span></span><span></span>
+          </span>
+          <span>legofolio</span>
+        </a>
+
+        <div class="intro-copy">
+          <p class="eyebrow">Build it. Share it.</p>
+          <h1 id="intro-title">find the best resale lego prices here</h1>
+          <p>
+            Create an account to track the sets you love and discover better prices
+            for your next build.
+          </p>
+        </div>
+
+        <p class="intro-note">Your builds deserve more than a dusty shelf.</p>
+      </section>
+
+      <section class="signup-panel" aria-labelledby="signup-title">
+        <div class="signup-card">
+          <header class="form-header">
+            <p class="step">GET STARTED</p>
+            <h2 id="signup-title">Create your account</h2>
+            <p>It only takes a minute. No credit card required.</p>
+          </header>
+
+          <button class="google-button" id="google-signup" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                fill="#4285f4"
+                d="M21.35 12.18c0-.64-.06-1.25-.17-1.84H12v3.48h5.25a4.49 4.49 0 0 1-1.95 2.94v2.26h3.16c1.85-1.7 2.89-4.22 2.89-6.84Z"
+              />
+              <path
+                fill="#34a853"
+                d="M12 21.7c2.64 0 4.86-.88 6.48-2.38l-3.16-2.45c-.88.59-2 .94-3.32.94a5.72 5.72 0 0 1-5.37-3.96H3.36v2.53A9.79 9.79 0 0 0 12 21.7Z"
+              />
+              <path
+                fill="#fbbc04"
+                d="M6.63 13.85A5.9 5.9 0 0 1 6.32 12c0-.64.11-1.26.31-1.85V7.62H3.36A9.7 9.7 0 0 0 2.3 12c0 1.58.38 3.07 1.06 4.38l3.27-2.53Z"
+              />
+              <path
+                fill="#ea4335"
+                d="M12 6.19c1.44 0 2.73.49 3.74 1.46l2.81-2.81A9.42 9.42 0 0 0 12 2.3a9.79 9.79 0 0 0-8.64 5.32l3.27 2.53A5.72 5.72 0 0 1 12 6.19Z"
+              />
+            </svg>
+            Continue with Google
+          </button>
+
+          <div class="divider"><span>or sign up with email</span></div>
+
+          <form id="signup-form" novalidate>
+            <div class="field">
+              <label for="username">Username</label>
+              <div class="input-wrap">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z" />
+                </svg>
+                <input
+                  id="username"
+                  name="username"
+                  type="text"
+                  placeholder="Choose a username"
+                  autocomplete="username"
+                  minlength="3"
+                  maxlength="24"
+                  required
+                />
+              </div>
+              <p class="error" id="username-error"></p>
+            </div>
+
+            <div class="field">
+              <label for="email">Email address</label>
+              <div class="input-wrap">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="m3 6 9 7 9-7M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" />
+                </svg>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  autocomplete="email"
+                  required
+                />
+              </div>
+              <p class="error" id="email-error"></p>
+            </div>
+
+            <div class="field">
+              <label for="password">Password</label>
+              <div class="input-wrap">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M7 10V7a5 5 0 0 1 10 0v3M5 10h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1Z" />
+                </svg>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  placeholder="At least 8 characters"
+                  autocomplete="new-password"
+                  minlength="8"
+                  required
+                />
+                <button class="password-toggle" type="button" aria-label="Show password" aria-pressed="false">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+                    <circle cx="12" cy="12" r="2.5" />
+                  </svg>
+                </button>
+              </div>
+              <div class="password-meter" aria-hidden="true">
+                <span></span><span></span><span></span><span></span>
+              </div>
+              <p class="password-hint" id="password-hint">Use 8+ characters with a number and uppercase letter.</p>
+              <p class="error" id="password-error"></p>
+            </div>
+
+            <label class="terms">
+              <input id="terms" name="terms" type="checkbox" required />
+              <span>
+                I agree to the <a href="#">Terms of Service</a> and
+                <a href="#">Privacy Policy</a>.
+              </span>
+            </label>
+            <p class="error terms-error" id="terms-error"></p>
+
+            <button class="submit-button" type="submit">
+              <span>Create account</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5" /></svg>
+            </button>
+
+            <p class="signin">Already have an account? <a href="#">Sign in</a></p>
+          </form>
+
+          <div class="notice" id="notice" role="status" aria-live="polite"></div>
+        </div>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
