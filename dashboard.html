@@ -20,6 +20,11 @@
       .lookup-result-card img { width: 58px; height: 58px; object-fit: contain; }
       .lookup-result-card strong, .lookup-result-card small { display: block; }
       .lookup-result-card small { margin-top: 4px; color: #718278; }
+      .add-button, .sign-out, .lookup-button, menu button, .lookup-result-card { transition: transform .12s ease, box-shadow .12s ease, filter .12s ease; cursor: pointer; }
+      .add-button:hover, .lookup-button:hover, #save-set:hover:not(:disabled) { filter: brightness(1.08); box-shadow: 0 5px 12px #10261d2e; transform: translateY(-1px); }
+      .sign-out:hover, #cancel-add:hover, .lookup-result-card:hover { box-shadow: 0 4px 10px #10261d1f; transform: translateY(-1px); }
+      .add-button:active, .sign-out:active, .lookup-button:active, menu button:active, .lookup-result-card:active { box-shadow: none; transform: translateY(1px) scale(.98); }
+      .add-button:focus-visible, .sign-out:focus-visible, .lookup-button:focus-visible, menu button:focus-visible, .lookup-result-card:focus-visible { outline: 3px solid #e8b84c; outline-offset: 2px; }
     </style>
   </head>
   <body>
@@ -36,7 +41,7 @@
         <section class="layout"><section class="panel" id="holdings"><header><div><p class="eyebrow">YOUR PORTFOLIO</p><h2>Top holdings</h2></div><button>View all →</button></header><div id="holdings-list"></div></section><aside><section class="panel" id="watchlist"><header><div><p class="eyebrow">ON YOUR RADAR</p><h2>Watchlist</h2></div></header><div id="watchlist-list"></div></section><section class="panel mix"><p class="eyebrow">BY CATEGORY</p><h2>Collection mix</h2><div class="mix-content"><div class="donut">100<small>%</small></div><p>● Sets <b>68%</b><br />● Minifigures <b>22%</b><br />● Parts <b>10%</b></p></div></section></aside></section>
       </main>
     </div>
-    <dialog id="dialog"><form method="dialog"><h2>Add to collection</h2><label>Set or minifigure name / number<input id="set-number" placeholder="Example: AT-AT, 75313, or Darth Vader" autocomplete="off" required /></label><button class="lookup-button" id="lookup-set" type="button">Search LEGO</button><p class="lookup-result" id="lookup-result" role="status"></p><div class="lookup-results" id="lookup-results" hidden></div><label>Selected item<input id="new-name" readonly /></label><label>Current value<input id="new-value" type="number" min="0" step="0.01" placeholder="Enter your estimated value" required /></label><menu><button value="cancel">Cancel</button><button id="save-set" value="default" disabled>Add item</button></menu></form></dialog>
+    <dialog id="dialog"><form method="dialog"><h2>Add to collection</h2><label>Set or minifigure name / number<input id="set-number" placeholder="Example: AT-AT, 75313, or Darth Vader" autocomplete="off" required /></label><button class="lookup-button" id="lookup-set" type="button">Search LEGO</button><p class="lookup-result" id="lookup-result" role="status"></p><div class="lookup-results" id="lookup-results" hidden></div><label>Selected item<input id="new-name" readonly /></label><label>Current value<input id="new-value" type="number" min="0" step="0.01" placeholder="Enter your estimated value" required /></label><menu><button id="cancel-add" type="button">Cancel</button><button id="save-set" value="default" disabled>Add item</button></menu></form></dialog>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
     <script src="dashboard.js"></script>

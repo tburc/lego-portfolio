@@ -32,6 +32,16 @@ const setNumberInput = document.querySelector("#set-number");
 const lookupResult = document.querySelector("#lookup-result");
 document.querySelector("#add-set").addEventListener("click", () => dialog.showModal());
 const lookupResults = document.querySelector("#lookup-results");
+document.querySelector("#cancel-add").addEventListener("click", () => {
+  dialog.querySelector("form").reset();
+  lookupResults.replaceChildren();
+  lookupResults.hidden = true;
+  lookupResult.textContent = "";
+  delete setNumberInput.dataset.setNumber;
+  delete setNumberInput.dataset.itemType;
+  saveSetButton.disabled = true;
+  dialog.close("cancel");
+});
 
 const searchItems = (data) => {
   if (Array.isArray(data)) return data;
