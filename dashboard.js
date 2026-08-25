@@ -20,7 +20,7 @@ async function loadSignedInUser() {
 const watchlist = [["The Milky Way Galaxy", "$164.99", "+8.4%"], ["Medieval Town Square", "$229.99", "+4.1%"], ["Wolfpack Beastmaster", "$18.50", "−2.2%"]];
 const price = (value) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value);
 function render() {
-  document.querySelector("#holdings-list").innerHTML = holdings.map(([name, number, value, change, icon]) => `<article class="holding"><span class="tile">${icon}</span><div><strong>${name}</strong><small>Set ${number} · Sealed</small></div><div class="value"><strong>${price(value)}</strong><small class="${change === "0.0%" ? "" : "positive"}">${change}</small></div></article>`).join("");
+  document.querySelector("#holdings-list").innerHTML = holdings.map(([name, number, value, change, icon, type = "set"]) => `<article class="holding"><span class="tile">${icon}</span><div><strong>${name}</strong><small>${type === "minifigure" ? "Minifigure" : "Set"} ${number} · Sealed</small></div><div class="value"><strong>${price(value)}</strong><small class="${change === "0.0%" ? "" : "positive"}">${change}</small></div></article>`).join("");
   document.querySelector("#watchlist-list").innerHTML = watchlist.map(([name, value, change]) => `<article class="watch"><div><strong>${name}</strong><small>Watchlisted set</small></div><div><strong>${value}</strong><small class="${change.includes("−") ? "negative" : "positive"}">${change}</small></div></article>`).join("");
   document.querySelector("#set-count").textContent = holdings.length + 8;
   document.querySelector("#total-value").textContent = price(1434.07 + holdings.reduce((sum, item) => sum + item[2], 0));
@@ -30,52 +30,97 @@ const lookupButton = document.querySelector("#lookup-set");
 const saveSetButton = document.querySelector("#save-set");
 const setNumberInput = document.querySelector("#set-number");
 const lookupResult = document.querySelector("#lookup-result");
-const lookupPreview = document.querySelector("#lookup-preview");
-const lookupImage = document.querySelector("#lookup-image");
 document.querySelector("#add-set").addEventListener("click", () => dialog.showModal());
+const lookupResults = document.querySelector("#lookup-results");
+
+const searchItems = (data) => {
+  if (Array.isArray(data)) return data;
+  const grouped = ["results", "items", "sets", "minifigures", "minifigs"]
+    .flatMap((key) => Array.isArray(data?.[key]) ? data[key] : []);
+  return grouped.length ? grouped : (data && !data.error ? [data] : []);
+};
+
+const searchItemDetails = (item) => {
+  const type = item.type || item.item_type || (item.fig_num || item.minifig_num ? "minifigure" : "set");
+  const number = item.set_num || item.fig_num || item.minifig_num || item.number || item.id || "";
+  return {
+    name: item.name || item.descr || "Unnamed LEGO item",
+    number,
+    type,
+    image: item.set_img_url || item.img_big || item.img_sm || item.img_tn || item.image_url || item.image,
+    meta: type === "minifigure" ? `Minifigure · ${number}` : `Set ${number}${item.year ? ` · ${item.year}` : ""}`,
+  };
+};
+
+function showSearchItems(items) {
+  lookupResults.replaceChildren();
+  items.forEach((item) => {
+    const details = searchItemDetails(item);
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "lookup-result-card";
+    const image = document.createElement("img");
+    image.alt = "";
+    if (details.image) image.src = details.image;
+    const text = document.createElement("span");
+    const name = document.createElement("strong");
+    name.textContent = details.name;
+    const meta = document.createElement("small");
+    meta.textContent = details.meta;
+    text.append(name, meta);
+    button.append(image, text);
+    button.addEventListener("click", () => {
+      lookupResults.querySelectorAll("button").forEach((result) => result.classList.remove("selected"));
+      button.classList.add("selected");
+      document.querySelector("#new-name").value = details.name;
+      setNumberInput.dataset.setNumber = details.number;
+      setNumberInput.dataset.itemType = details.type;
+      lookupResult.textContent = `Selected: ${details.name} · ${details.meta}`;
+      saveSetButton.disabled = false;
+    });
+    lookupResults.append(button);
+  });
+  lookupResults.hidden = false;
+}
+
 lookupButton.addEventListener("click", async () => {
-  const setNumber = setNumberInput.value.trim();
-  if (!setNumber) {
-    lookupResult.textContent = "Enter a set number first.";
+  const query = setNumberInput.value.trim();
+  if (!query) {
+    lookupResult.textContent = "Enter a set or minifigure name or number.";
     return;
   }
-
   lookupButton.disabled = true;
-  lookupButton.textContent = "Searching…";
+  lookupButton.textContent = "Searching...";
   lookupResult.textContent = "";
-  lookupPreview.hidden = true;
+  lookupResults.hidden = true;
   saveSetButton.disabled = true;
-
   try {
     const { data, error } = await window.supabaseClient.functions.invoke("lookup-set", {
-      body: { setNumber },
+      body: { query, setNumber: query, includeMinifigures: true, limit: 20 },
     });
     if (error) throw error;
-    if (data.error) throw new Error(data.error);
-
-    document.querySelector("#new-name").value = data.name || data.descr || "Unnamed set";
-    setNumberInput.dataset.setNumber = data.set_num || setNumber;
-    const imageUrl = data.set_img_url || data.img_big || data.img_sm || data.img_tn;
-    if (imageUrl) {
-      lookupImage.src = imageUrl;
-      lookupImage.alt = `${data.name || data.descr || "LEGO set"} product image`;
-      lookupPreview.hidden = false;
-    }
-    lookupResult.textContent = `Found: ${data.name || data.descr} · ${data.year || "Year unknown"} · ${data.num_parts || data.pieces || "?"} pieces`;
-    saveSetButton.disabled = false;
+    if (data?.error) throw new Error(data.error);
+    const items = searchItems(data).slice(0, 20);
+    if (!items.length) throw new Error("No matching sets or minifigures found.");
+    showSearchItems(items);
+    lookupResult.textContent = `${items.length} result${items.length === 1 ? "" : "s"} found. Select one to add.`;
+    if (items.length === 1) lookupResults.firstElementChild.click();
   } catch (error) {
-    lookupResult.textContent = error.message || "We could not find that set.";
+    lookupResult.textContent = error.message || "We could not find a matching LEGO item.";
   } finally {
     lookupButton.disabled = false;
-    lookupButton.textContent = "Search set";
+    lookupButton.textContent = "Search LEGO";
   }
 });
+
 document.querySelector("#save-set").addEventListener("click", () => {
   const name = document.querySelector("#new-name").value.trim();
   const value = Number(document.querySelector("#new-value").value);
   const number = setNumberInput.dataset.setNumber || setNumberInput.value.trim();
+  const type = setNumberInput.dataset.itemType || "set";
   if (name && Number.isFinite(value) && value >= 0) {
     holdings.unshift([name, number, value, "0.0%", "◆"]);
+    holdings[0][5] = type;
     render();
   }
 });
