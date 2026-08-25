@@ -11,6 +11,11 @@
     <style>
       .dashboard-actions { display: flex; align-items: center; gap: 10px; }
       .sign-out { padding: 10px 12px; border: 1px solid #e5ebe6; border-radius: 8px; color: #4d6257; background: #fff; font-size: 12px; font-weight: 700; }
+      .lookup-button { padding: 10px 12px; border: 0; border-radius: 8px; color: #fff; background: #147a47; font-weight: 700; }
+      .lookup-button:disabled, #save-set:disabled { cursor: wait; opacity: .6; }
+      .lookup-result { min-height: 18px; margin: -4px 0 0; color: #147a47; font-size: 12px; font-weight: 600; }
+      .lookup-preview { display: flex; padding: 10px; border: 1px solid #e5ebe6; border-radius: 8px; align-items: center; justify-content: center; background: #f7f9f7; }
+      .lookup-preview img { display: block; width: 100%; max-width: 210px; max-height: 130px; object-fit: contain; }
     </style>
   </head>
   <body>
@@ -27,7 +32,7 @@
         <section class="layout"><section class="panel" id="holdings"><header><div><p class="eyebrow">YOUR PORTFOLIO</p><h2>Top holdings</h2></div><button>View all →</button></header><div id="holdings-list"></div></section><aside><section class="panel" id="watchlist"><header><div><p class="eyebrow">ON YOUR RADAR</p><h2>Watchlist</h2></div></header><div id="watchlist-list"></div></section><section class="panel mix"><p class="eyebrow">BY CATEGORY</p><h2>Collection mix</h2><div class="mix-content"><div class="donut">100<small>%</small></div><p>● Sets <b>68%</b><br />● Minifigures <b>22%</b><br />● Parts <b>10%</b></p></div></section></aside></section>
       </main>
     </div>
-    <dialog id="dialog"><form method="dialog"><h2>Add to collection</h2><label>Set name<input id="new-name" value="The Mandalorian N-1 Starfighter™" /></label><label>Current value<input id="new-value" type="number" min="0" step="0.01" value="59.99" /></label><menu><button value="cancel">Cancel</button><button id="save-set" value="default">Add set</button></menu></form></dialog>
+    <dialog id="dialog"><form method="dialog"><h2>Add to collection</h2><label>Set number<input id="set-number" placeholder="Example: 10316" inputmode="numeric" autocomplete="off" required /></label><button class="lookup-button" id="lookup-set" type="button">Search set</button><div class="lookup-preview" id="lookup-preview" hidden><img id="lookup-image" alt="" /></div><p class="lookup-result" id="lookup-result" role="status"></p><label>Set name<input id="new-name" readonly /></label><label>Current value<input id="new-value" type="number" min="0" step="0.01" placeholder="Enter your estimated value" required /></label><menu><button value="cancel">Cancel</button><button id="save-set" value="default" disabled>Add set</button></menu></form></dialog>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
     <script src="dashboard.js"></script>

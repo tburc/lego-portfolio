@@ -26,8 +26,59 @@ function render() {
   document.querySelector("#total-value").textContent = price(1434.07 + holdings.reduce((sum, item) => sum + item[2], 0));
 }
 const dialog = document.querySelector("#dialog");
+const lookupButton = document.querySelector("#lookup-set");
+const saveSetButton = document.querySelector("#save-set");
+const setNumberInput = document.querySelector("#set-number");
+const lookupResult = document.querySelector("#lookup-result");
+const lookupPreview = document.querySelector("#lookup-preview");
+const lookupImage = document.querySelector("#lookup-image");
 document.querySelector("#add-set").addEventListener("click", () => dialog.showModal());
-document.querySelector("#save-set").addEventListener("click", () => { const name = document.querySelector("#new-name").value.trim(); const value = Number(document.querySelector("#new-value").value); if (name && value >= 0) { holdings.unshift([name, "New", value, "0.0%", "◆"]); render(); } });
+lookupButton.addEventListener("click", async () => {
+  const setNumber = setNumberInput.value.trim();
+  if (!setNumber) {
+    lookupResult.textContent = "Enter a set number first.";
+    return;
+  }
+
+  lookupButton.disabled = true;
+  lookupButton.textContent = "Searching…";
+  lookupResult.textContent = "";
+  lookupPreview.hidden = true;
+  saveSetButton.disabled = true;
+
+  try {
+    const { data, error } = await window.supabaseClient.functions.invoke("lookup-set", {
+      body: { setNumber },
+    });
+    if (error) throw error;
+    if (data.error) throw new Error(data.error);
+
+    document.querySelector("#new-name").value = data.name || data.descr || "Unnamed set";
+    setNumberInput.dataset.setNumber = data.set_num || setNumber;
+    const imageUrl = data.set_img_url || data.img_big || data.img_sm || data.img_tn;
+    if (imageUrl) {
+      lookupImage.src = imageUrl;
+      lookupImage.alt = `${data.name || data.descr || "LEGO set"} product image`;
+      lookupPreview.hidden = false;
+    }
+    lookupResult.textContent = `Found: ${data.name || data.descr} · ${data.year || "Year unknown"} · ${data.num_parts || data.pieces || "?"} pieces`;
+    saveSetButton.disabled = false;
+  } catch (error) {
+    lookupResult.textContent = error.message || "We could not find that set.";
+  } finally {
+    lookupButton.disabled = false;
+    lookupButton.textContent = "Search set";
+  }
+});
+document.querySelector("#save-set").addEventListener("click", () => {
+  const name = document.querySelector("#new-name").value.trim();
+  const value = Number(document.querySelector("#new-value").value);
+  const number = setNumberInput.dataset.setNumber || setNumberInput.value.trim();
+  if (name && Number.isFinite(value) && value >= 0) {
+    holdings.unshift([name, number, value, "0.0%", "◆"]);
+    render();
+  }
+});
 document.querySelector("#sign-out").addEventListener("click", async () => {
   await window.supabaseClient.auth.signOut();
   window.location.replace("index.html");
