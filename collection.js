@@ -106,8 +106,10 @@ function updateProgress() {
 
 function renderValueChart() {
   const currentValue = collection.reduce((sum, item) => sum + Number(item.estimated_value || 0), 0);
-  const points = valuationHistory.length ? valuationHistory.map((entry) => Number(entry.total_value || 0)) : [currentValue];
-  if (points.at(-1) !== currentValue) points.push(currentValue);
+  const currentCost = collection.reduce((sum, item) => sum + Number(item.purchase_price || 0), 0);
+  const currentReturn = currentValue - currentCost;
+  const points = [0, ...valuationHistory.map((entry) => Number(entry.total_value || 0) - Number(entry.total_cost || 0))];
+  if (points.at(-1) !== currentReturn) points.push(currentReturn);
   const minValue = Math.min(...points, 0);
   const maxValue = Math.max(...points, 1);
   const range = Math.max(maxValue - minValue, 1);
@@ -141,7 +143,11 @@ function periodStart(period) {
 
 function historyForPeriod(period) {
   const start = periodStart(period);
-  if (!start) return valuationHistory;
+  if (!start) {
+    if (!valuationHistory.length) return [];
+    const firstTime = new Date(valuationHistory[0].recorded_at).getTime();
+    return [{ total_value: 0, total_cost: 0, recorded_at: new Date(firstTime - 1).toISOString() }, ...valuationHistory];
+  }
   const inRange = valuationHistory.filter((entry) => new Date(entry.recorded_at) >= start);
   const earlier = valuationHistory.filter((entry) => new Date(entry.recorded_at) < start).at(-1);
   return earlier ? [{ ...earlier, recorded_at: start.toISOString() }, ...inRange] : inRange;
@@ -151,19 +157,22 @@ function renderDetailedChart(period) {
   selectedChartPeriod = period;
   const history = historyForPeriod(period).map((entry) => ({ ...entry }));
   const currentValue = collection.reduce((sum, item) => sum + Number(item.estimated_value || 0), 0);
+  const currentCost = collection.reduce((sum, item) => sum + Number(item.purchase_price || 0), 0);
+  const currentReturn = currentValue - currentCost;
   const now = new Date();
-  if (!history.length || Number(history.at(-1).total_value) !== currentValue || new Date(history.at(-1).recorded_at) < now) {
-    history.push({ total_value: currentValue, recorded_at: now.toISOString() });
+  const lastReturn = history.length ? Number(history.at(-1).total_value || 0) - Number(history.at(-1).total_cost || 0) : null;
+  if (!history.length || lastReturn !== currentReturn || new Date(history.at(-1).recorded_at) < now) {
+    history.push({ total_value: currentValue, total_cost: currentCost, recorded_at: now.toISOString() });
   }
-  const values = history.map((entry) => Number(entry.total_value || 0));
+  const values = history.map((entry) => Number(entry.total_value || 0) - Number(entry.total_cost || 0));
   const latest = values.at(-1) || 0;
   const first = values[0] ?? latest;
   const change = latest - first;
-  const changePercent = first > 0 ? (change / first) * 100 : 0;
+  const changePercent = currentCost > 0 ? (change / currentCost) * 100 : 0;
   const positive = change >= 0;
   const detailValue = document.querySelector("#detail-value");
   const detailChange = document.querySelector("#detail-change");
-  detailValue.textContent = price(latest);
+  detailValue.textContent = `${latest >= 0 ? "+" : "−"}${price(Math.abs(latest))}`;
   detailChange.textContent = `${positive ? "+" : "−"}${price(Math.abs(change))} (${positive ? "+" : "−"}${Math.abs(changePercent).toFixed(1)}%) · ${period}`;
   detailChange.className = positive ? "positive" : "negative";
   document.querySelectorAll(".chart-period").forEach((button) => button.classList.toggle("active", button.dataset.period === period));
@@ -172,7 +181,7 @@ function renderDetailedChart(period) {
   const chartHistory = history.length === 1
     ? [{ ...history[0], recorded_at: (periodStart(period) || new Date(now.getTime() - 86400000)).toISOString() }, history[0]]
     : history;
-  const points = chartHistory.map((entry) => Number(entry.total_value || 0));
+  const points = chartHistory.map((entry) => Number(entry.total_value || 0) - Number(entry.total_cost || 0));
   const min = Math.min(...points);
   const max = Math.max(...points);
   const range = Math.max(max - min, 1);
@@ -181,7 +190,7 @@ function renderDetailedChart(period) {
   const axisRange = Math.max(axisEnd - axisStart, 1);
   const coordinates = chartHistory.map((entry) => ({
     x: Math.max(0, Math.min(700, ((new Date(entry.recorded_at) - axisStart) / axisRange) * 700)),
-    value: Number(entry.total_value || 0),
+    value: Number(entry.total_value || 0) - Number(entry.total_cost || 0),
   })).map((point) => ({
     x: point.x,
     y: 255 - ((point.value - min) / range) * 230,
