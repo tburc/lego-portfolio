@@ -2,6 +2,7 @@ let collection = [];
 let valuationHistory = [];
 let currentUser = null;
 let toastTimer;
+let selectedChartPeriod = "ALL";
 
 const dialog = document.querySelector("#dialog");
 const form = dialog.querySelector("form");
@@ -122,6 +123,64 @@ function renderValueChart() {
   document.querySelector("#value-dot").setAttribute("cx", last.x);
   document.querySelector("#value-dot").setAttribute("cy", last.y);
   document.querySelector("#chart-caption").textContent = valuationHistory.length ? `${valuationHistory.length} saved update${valuationHistory.length === 1 ? "" : "s"}` : "No history yet";
+  if (document.querySelector("#chart-dialog").open) renderDetailedChart(selectedChartPeriod);
+}
+
+function periodStart(period) {
+  const now = new Date();
+  const start = new Date(now);
+  const days = { "1D": 1, "1W": 7, "1M": 30, "3M": 90, "1Y": 365, "5Y": 1825, "10Y": 3650, "20Y": 7300 };
+  if (period === "ALL") return null;
+  if (period === "YTD") return new Date(now.getFullYear(), 0, 1);
+  start.setDate(start.getDate() - days[period]);
+  return start;
+}
+
+function historyForPeriod(period) {
+  const start = periodStart(period);
+  if (!start) return valuationHistory;
+  const inRange = valuationHistory.filter((entry) => new Date(entry.recorded_at) >= start);
+  const earlier = valuationHistory.filter((entry) => new Date(entry.recorded_at) < start).at(-1);
+  return earlier ? [earlier, ...inRange] : inRange;
+}
+
+function renderDetailedChart(period) {
+  selectedChartPeriod = period;
+  const history = historyForPeriod(period);
+  const values = history.map((entry) => Number(entry.total_value || 0));
+  const latest = values.at(-1) || 0;
+  const first = values[0] ?? latest;
+  const change = latest - first;
+  const changePercent = first > 0 ? (change / first) * 100 : 0;
+  const positive = change >= 0;
+  const detailValue = document.querySelector("#detail-value");
+  const detailChange = document.querySelector("#detail-change");
+  detailValue.textContent = price(latest);
+  detailChange.textContent = `${positive ? "+" : "−"}${price(Math.abs(change))} (${positive ? "+" : "−"}${Math.abs(changePercent).toFixed(1)}%) · ${period}`;
+  detailChange.className = positive ? "positive" : "negative";
+  document.querySelectorAll(".chart-period").forEach((button) => button.classList.toggle("active", button.dataset.period === period));
+  document.querySelector("#chart-empty").hidden = history.length > 0;
+
+  const points = values.length ? values : [0];
+  const min = Math.min(...points);
+  const max = Math.max(...points);
+  const range = Math.max(max - min, 1);
+  const coordinates = points.map((value, index) => ({
+    x: points.length === 1 ? 350 : (index / (points.length - 1)) * 700,
+    y: 255 - ((value - min) / range) * 230,
+  }));
+  const line = coordinates.map((point, index) => `${index ? "L" : "M"}${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(" ");
+  const last = coordinates.at(-1);
+  const lineElement = document.querySelector("#detail-line");
+  const areaElement = document.querySelector("#detail-area");
+  const dotElement = document.querySelector("#detail-dot");
+  lineElement.setAttribute("d", line);
+  areaElement.setAttribute("d", `${line} L${last.x.toFixed(1)} 280 L${coordinates[0].x.toFixed(1)} 280 Z`);
+  dotElement.setAttribute("cx", last.x);
+  dotElement.setAttribute("cy", last.y);
+  lineElement.style.stroke = positive ? "#147a47" : "#c0524d";
+  areaElement.style.fill = positive ? "#bceecb80" : "#f3c8c580";
+  dotElement.style.fill = positive ? "#e8b84c" : "#c0524d";
 }
 
 function makeAction(label, className, handler) {
@@ -212,20 +271,20 @@ function renderCollection() {
 async function loadCollection() {
   const [{ data, error }, historyResult] = await Promise.all([
     window.supabaseClient.from("collection_items").select("*").order("created_at", { ascending: false }),
-    window.supabaseClient.from("collection_value_history").select("*").order("recorded_at", { ascending: true }).limit(200),
+    window.supabaseClient.from("collection_value_history").select("*").order("recorded_at", { ascending: false }).limit(200),
   ]);
   if (error) {
     holdingsList.innerHTML = `<div class="empty-collection"><strong>Collection could not load</strong><span>${error.message}</span></div>`;
     return;
   }
   collection = data || [];
-  valuationHistory = historyResult.data || [];
+  valuationHistory = (historyResult.data || []).reverse();
   renderCollection();
 }
 
 async function loadHistory() {
-  const { data } = await window.supabaseClient.from("collection_value_history").select("*").order("recorded_at", { ascending: true }).limit(200);
-  valuationHistory = data || [];
+  const { data } = await window.supabaseClient.from("collection_value_history").select("*").order("recorded_at", { ascending: false }).limit(200);
+  valuationHistory = (data || []).reverse();
 }
 
 const searchItems = (data) => {
@@ -344,6 +403,20 @@ addButton.addEventListener("click", openDialog);
 document.querySelector("#add-from-empty").addEventListener("click", openDialog);
 document.querySelector("#cancel-add").addEventListener("click", () => { resetDialog(); dialog.close("cancel"); });
 dialog.addEventListener("cancel", resetDialog);
+const chartButton = document.querySelector("#open-chart");
+const chartDialog = document.querySelector("#chart-dialog");
+const openDetailedChart = () => {
+  renderDetailedChart(selectedChartPeriod);
+  chartDialog.showModal();
+};
+chartButton.addEventListener("click", openDetailedChart);
+chartButton.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" || event.key === " ") {
+    event.preventDefault();
+    openDetailedChart();
+  }
+});
+document.querySelectorAll(".chart-period").forEach((button) => button.addEventListener("click", () => renderDetailedChart(button.dataset.period)));
 document.querySelector("#sign-out").addEventListener("click", async () => {
   await window.supabaseClient.auth.signOut();
   window.location.replace("index.html");
