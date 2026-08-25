@@ -144,15 +144,18 @@ function historyForPeriod(period) {
   if (!start) return valuationHistory;
   const inRange = valuationHistory.filter((entry) => new Date(entry.recorded_at) >= start);
   const earlier = valuationHistory.filter((entry) => new Date(entry.recorded_at) < start).at(-1);
-  return earlier ? [earlier, ...inRange] : inRange;
+  return earlier ? [{ ...earlier, recorded_at: start.toISOString() }, ...inRange] : inRange;
 }
 
 function renderDetailedChart(period) {
   selectedChartPeriod = period;
-  const history = historyForPeriod(period);
+  const history = historyForPeriod(period).map((entry) => ({ ...entry }));
   const currentValue = collection.reduce((sum, item) => sum + Number(item.estimated_value || 0), 0);
+  const now = new Date();
+  if (!history.length || Number(history.at(-1).total_value) !== currentValue || new Date(history.at(-1).recorded_at) < now) {
+    history.push({ total_value: currentValue, recorded_at: now.toISOString() });
+  }
   const values = history.map((entry) => Number(entry.total_value || 0));
-  if (!values.length || values.at(-1) !== currentValue) values.push(currentValue);
   const latest = values.at(-1) || 0;
   const first = values[0] ?? latest;
   const change = latest - first;
@@ -166,13 +169,22 @@ function renderDetailedChart(period) {
   document.querySelectorAll(".chart-period").forEach((button) => button.classList.toggle("active", button.dataset.period === period));
   document.querySelector("#chart-empty").hidden = history.length > 0;
 
-  const points = values.length === 1 ? [values[0], values[0]] : values;
+  const chartHistory = history.length === 1
+    ? [{ ...history[0], recorded_at: (periodStart(period) || new Date(now.getTime() - 86400000)).toISOString() }, history[0]]
+    : history;
+  const points = chartHistory.map((entry) => Number(entry.total_value || 0));
   const min = Math.min(...points);
   const max = Math.max(...points);
   const range = Math.max(max - min, 1);
-  const coordinates = points.map((value, index) => ({
-    x: (index / (points.length - 1)) * 700,
-    y: 255 - ((value - min) / range) * 230,
+  const axisStart = periodStart(period) || new Date(chartHistory[0].recorded_at);
+  const axisEnd = now;
+  const axisRange = Math.max(axisEnd - axisStart, 1);
+  const coordinates = chartHistory.map((entry) => ({
+    x: Math.max(0, Math.min(700, ((new Date(entry.recorded_at) - axisStart) / axisRange) * 700)),
+    value: Number(entry.total_value || 0),
+  })).map((point) => ({
+    x: point.x,
+    y: 255 - ((point.value - min) / range) * 230,
   }));
   const line = coordinates.map((point, index) => `${index ? "L" : "M"}${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(" ");
   const last = coordinates.at(-1);
