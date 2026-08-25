@@ -1,4 +1,5 @@
 let collection = [];
+let valuationHistory = [];
 let currentUser = null;
 let toastTimer;
 
@@ -11,6 +12,7 @@ const lookupResult = document.querySelector("#lookup-result");
 const lookupResults = document.querySelector("#lookup-results");
 const nameInput = document.querySelector("#new-name");
 const valueInput = document.querySelector("#new-value");
+const purchaseInput = document.querySelector("#purchase-price");
 const holdingsList = document.querySelector("#holdings-list");
 const addButton = document.querySelector("#add-set");
 const price = (value) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(value) || 0);
@@ -61,6 +63,9 @@ function updateProgress() {
   const sets = collection.filter((item) => item.item_type === "set").length;
   const minifigures = collection.filter((item) => item.item_type === "minifigure").length;
   const totalValue = collection.reduce((sum, item) => sum + Number(item.estimated_value || 0), 0);
+  const totalCost = collection.reduce((sum, item) => sum + Number(item.purchase_price || 0), 0);
+  const gain = totalValue - totalCost;
+  const gainPercent = totalCost > 0 ? (gain / totalCost) * 100 : 0;
   const best = collection.reduce((winner, item) => !winner || Number(item.estimated_value) > Number(winner.estimated_value) ? item : winner, null);
   let levelIndex = levels.findLastIndex((level) => total >= level.at);
   if (levelIndex < 0) levelIndex = 0;
@@ -69,6 +74,12 @@ function updateProgress() {
   const progress = next ? ((total - level.at) / (next.at - level.at)) * 100 : 100;
 
   document.querySelector("#total-value").textContent = price(totalValue);
+  const portfolioGain = document.querySelector("#portfolio-gain");
+  portfolioGain.textContent = `${gain >= 0 ? "+" : "−"}${price(Math.abs(gain))} (${gain >= 0 ? "+" : "−"}${Math.abs(gainPercent).toFixed(1)}%) all time`;
+  portfolioGain.className = gain >= 0 ? "positive" : "negative";
+  document.querySelector("#value-line").style.stroke = gain >= 0 ? "#147a47" : "#c0524d";
+  document.querySelector("#value-area").style.fill = gain >= 0 ? "#bceecb99" : "#f3c8c599";
+  document.querySelector("#value-dot").style.fill = gain >= 0 ? "#e8b84c" : "#c0524d";
   document.querySelector("#set-count").textContent = sets;
   document.querySelector("#minifigure-count").textContent = minifigures;
   document.querySelector("#item-count").textContent = total;
@@ -93,17 +104,16 @@ function updateProgress() {
 }
 
 function renderValueChart() {
-  const ordered = [...collection].sort((left, right) => new Date(left.created_at) - new Date(right.created_at));
-  let runningValue = 0;
-  const values = ordered.map((item) => (runningValue += Number(item.estimated_value || 0)));
-  const points = [0, ...values];
+  const points = valuationHistory.length ? valuationHistory.map((entry) => Number(entry.total_value || 0)) : [0];
+  const minValue = Math.min(...points, 0);
   const maxValue = Math.max(...points, 1);
+  const range = Math.max(maxValue - minValue, 1);
   const width = 400;
   const top = 8;
   const bottom = 72;
   const coordinates = points.map((value, index) => ({
     x: points.length === 1 ? width : (index / (points.length - 1)) * width,
-    y: bottom - (value / maxValue) * (bottom - top),
+    y: bottom - ((value - minValue) / range) * (bottom - top),
   }));
   const line = coordinates.map((point, index) => `${index ? "L" : "M"}${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(" ");
   const last = coordinates.at(-1);
@@ -111,7 +121,7 @@ function renderValueChart() {
   document.querySelector("#value-area").setAttribute("d", `${line} L${last.x.toFixed(1)} 80 L0 80 Z`);
   document.querySelector("#value-dot").setAttribute("cx", last.x);
   document.querySelector("#value-dot").setAttribute("cy", last.y);
-  document.querySelector("#chart-caption").textContent = collection.length ? `${collection.length} addition${collection.length === 1 ? "" : "s"}` : "No history yet";
+  document.querySelector("#chart-caption").textContent = valuationHistory.length ? `${valuationHistory.length} saved update${valuationHistory.length === 1 ? "" : "s"}` : "No history yet";
 }
 
 function makeAction(label, className, handler) {
@@ -124,16 +134,21 @@ function makeAction(label, className, handler) {
 }
 
 async function editItem(item) {
-  const answer = window.prompt(`Update the estimated value for ${item.name}:`, Number(item.estimated_value).toFixed(2));
-  if (answer === null) return;
-  const estimatedValue = Number(answer);
-  if (!Number.isFinite(estimatedValue) || estimatedValue < 0) {
-    showToast("Enter a valid value of 0 or more.");
+  const paidAnswer = window.prompt(`What did you pay for ${item.name}?`, Number(item.purchase_price || 0).toFixed(2));
+  if (paidAnswer === null) return;
+  const valueAnswer = window.prompt(`What is ${item.name} worth now?`, Number(item.estimated_value).toFixed(2));
+  if (valueAnswer === null) return;
+  const purchasePrice = Number(paidAnswer);
+  const estimatedValue = Number(valueAnswer);
+  if (![purchasePrice, estimatedValue].every((value) => Number.isFinite(value) && value >= 0)) {
+    showToast("Enter valid prices of 0 or more.");
     return;
   }
-  const { error } = await window.supabaseClient.from("collection_items").update({ estimated_value: estimatedValue }).eq("id", item.id);
+  const { error } = await window.supabaseClient.from("collection_items").update({ purchase_price: purchasePrice, estimated_value: estimatedValue }).eq("id", item.id);
   if (error) return showToast(`Could not update: ${error.message}`);
+  item.purchase_price = purchasePrice;
   item.estimated_value = estimatedValue;
+  await loadHistory();
   renderCollection();
   showToast("Value updated.");
 }
@@ -143,6 +158,7 @@ async function deleteItem(item) {
   const { error } = await window.supabaseClient.from("collection_items").delete().eq("id", item.id);
   if (error) return showToast(`Could not remove: ${error.message}`);
   collection = collection.filter((entry) => entry.id !== item.id);
+  await loadHistory();
   renderCollection();
   showToast("Item removed from your collection.");
 }
@@ -177,7 +193,11 @@ function renderCollection() {
       const amount = document.createElement("strong");
       amount.textContent = price(item.estimated_value);
       const added = document.createElement("small");
-      added.textContent = `Added ${new Date(item.created_at).toLocaleDateString()}`;
+      const itemCost = Number(item.purchase_price || 0);
+      const itemGain = Number(item.estimated_value || 0) - itemCost;
+      const itemGainPercent = itemCost > 0 ? (itemGain / itemCost) * 100 : 0;
+      added.className = itemGain >= 0 ? "positive" : "negative";
+      added.textContent = `${itemGain >= 0 ? "+" : "−"}${price(Math.abs(itemGain))} (${itemGain >= 0 ? "+" : "−"}${Math.abs(itemGainPercent).toFixed(1)}%)`;
       value.append(amount, added);
       const actions = document.createElement("div");
       actions.className = "holding-actions";
@@ -190,13 +210,22 @@ function renderCollection() {
 }
 
 async function loadCollection() {
-  const { data, error } = await window.supabaseClient.from("collection_items").select("*").order("created_at", { ascending: false });
+  const [{ data, error }, historyResult] = await Promise.all([
+    window.supabaseClient.from("collection_items").select("*").order("created_at", { ascending: false }),
+    window.supabaseClient.from("collection_value_history").select("*").order("recorded_at", { ascending: true }).limit(200),
+  ]);
   if (error) {
     holdingsList.innerHTML = `<div class="empty-collection"><strong>Collection could not load</strong><span>${error.message}</span></div>`;
     return;
   }
   collection = data || [];
+  valuationHistory = historyResult.data || [];
   renderCollection();
+}
+
+async function loadHistory() {
+  const { data } = await window.supabaseClient.from("collection_value_history").select("*").order("recorded_at", { ascending: true }).limit(200);
+  valuationHistory = data || [];
 }
 
 const searchItems = (data) => {
@@ -280,7 +309,8 @@ lookupButton.addEventListener("click", async () => {
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   const estimatedValue = Number(valueInput.value);
-  if (!nameInput.value || !Number.isFinite(estimatedValue) || estimatedValue < 0) return;
+  const purchasePrice = Number(purchaseInput.value);
+  if (!nameInput.value || ![purchasePrice, estimatedValue].every((value) => Number.isFinite(value) && value >= 0)) return;
   saveButton.disabled = true;
   saveButton.textContent = "Saving…";
   const item = {
@@ -289,6 +319,7 @@ form.addEventListener("submit", async (event) => {
     name: nameInput.value.trim(),
     item_type: searchInput.dataset.itemType || "set",
     estimated_value: estimatedValue,
+    purchase_price: purchasePrice,
     image_url: searchInput.dataset.imageUrl || null,
     year: Number(searchInput.dataset.year) || null,
     pieces: Number(searchInput.dataset.pieces) || null,
@@ -300,6 +331,7 @@ form.addEventListener("submit", async (event) => {
     return (lookupResult.textContent = `Could not save: ${error.message}`);
   }
   collection.unshift(data);
+  await loadHistory();
   renderCollection();
   dialog.close();
   addButton.classList.add("celebrate");
