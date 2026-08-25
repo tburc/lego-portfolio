@@ -89,6 +89,29 @@ function updateProgress() {
   document.querySelector("#minifigure-mix").textContent = `${minifigurePercent}%`;
   document.querySelector("#mix-donut").innerHTML = `${total}<small> items</small>`;
   document.querySelector("#mix-donut").style.background = total ? `conic-gradient(#147a47 0 ${setPercent}%, #e8b84c ${setPercent}% 100%)` : "#edf2ee";
+  renderValueChart();
+}
+
+function renderValueChart() {
+  const ordered = [...collection].sort((left, right) => new Date(left.created_at) - new Date(right.created_at));
+  let runningValue = 0;
+  const values = ordered.map((item) => (runningValue += Number(item.estimated_value || 0)));
+  const points = [0, ...values];
+  const maxValue = Math.max(...points, 1);
+  const width = 400;
+  const top = 8;
+  const bottom = 72;
+  const coordinates = points.map((value, index) => ({
+    x: points.length === 1 ? width : (index / (points.length - 1)) * width,
+    y: bottom - (value / maxValue) * (bottom - top),
+  }));
+  const line = coordinates.map((point, index) => `${index ? "L" : "M"}${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(" ");
+  const last = coordinates.at(-1);
+  document.querySelector("#value-line").setAttribute("d", line);
+  document.querySelector("#value-area").setAttribute("d", `${line} L${last.x.toFixed(1)} 80 L0 80 Z`);
+  document.querySelector("#value-dot").setAttribute("cx", last.x);
+  document.querySelector("#value-dot").setAttribute("cy", last.y);
+  document.querySelector("#chart-caption").textContent = collection.length ? `${collection.length} addition${collection.length === 1 ? "" : "s"}` : "No history yet";
 }
 
 function makeAction(label, className, handler) {
