@@ -105,15 +105,18 @@ function updateProgress() {
 }
 
 function renderValueChart() {
-  const points = valuationHistory.length ? valuationHistory.map((entry) => Number(entry.total_value || 0)) : [0];
+  const currentValue = collection.reduce((sum, item) => sum + Number(item.estimated_value || 0), 0);
+  const points = valuationHistory.length ? valuationHistory.map((entry) => Number(entry.total_value || 0)) : [currentValue];
+  if (points.at(-1) !== currentValue) points.push(currentValue);
   const minValue = Math.min(...points, 0);
   const maxValue = Math.max(...points, 1);
   const range = Math.max(maxValue - minValue, 1);
   const width = 400;
   const top = 8;
   const bottom = 72;
-  const coordinates = points.map((value, index) => ({
-    x: points.length === 1 ? width : (index / (points.length - 1)) * width,
+  const chartPoints = points.length === 1 ? [points[0], points[0]] : points;
+  const coordinates = chartPoints.map((value, index) => ({
+    x: (index / (chartPoints.length - 1)) * width,
     y: bottom - ((value - minValue) / range) * (bottom - top),
   }));
   const line = coordinates.map((point, index) => `${index ? "L" : "M"}${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(" ");
@@ -147,7 +150,9 @@ function historyForPeriod(period) {
 function renderDetailedChart(period) {
   selectedChartPeriod = period;
   const history = historyForPeriod(period);
+  const currentValue = collection.reduce((sum, item) => sum + Number(item.estimated_value || 0), 0);
   const values = history.map((entry) => Number(entry.total_value || 0));
+  if (!values.length || values.at(-1) !== currentValue) values.push(currentValue);
   const latest = values.at(-1) || 0;
   const first = values[0] ?? latest;
   const change = latest - first;
@@ -161,12 +166,12 @@ function renderDetailedChart(period) {
   document.querySelectorAll(".chart-period").forEach((button) => button.classList.toggle("active", button.dataset.period === period));
   document.querySelector("#chart-empty").hidden = history.length > 0;
 
-  const points = values.length ? values : [0];
+  const points = values.length === 1 ? [values[0], values[0]] : values;
   const min = Math.min(...points);
   const max = Math.max(...points);
   const range = Math.max(max - min, 1);
   const coordinates = points.map((value, index) => ({
-    x: points.length === 1 ? 350 : (index / (points.length - 1)) * 700,
+    x: (index / (points.length - 1)) * 700,
     y: 255 - ((value - min) / range) * 230,
   }));
   const line = coordinates.map((point, index) => `${index ? "L" : "M"}${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(" ");

@@ -18,6 +18,8 @@
       .lookup-result-card { display: grid; grid-template-columns: 58px 1fr; gap: 10px; width: 100%; padding: 9px; border: 1px solid #e5ebe6; border-radius: 8px; text-align: left; background: #fff; cursor: pointer; }
       .lookup-result-card:hover, .lookup-result-card.selected { border-color: #147a47; background: #f0f8f3; }
       .lookup-result-card img { width: 58px; height: 58px; object-fit: contain; }
+      .lookup-result-card.selected { grid-template-columns: 118px 1fr; }
+      .lookup-result-card.selected img { width: 118px; height: 118px; border-radius: 7px; background: #fff; transition: width .18s ease, height .18s ease; }
       .lookup-result-card strong, .lookup-result-card small { display: block; }
       .lookup-result-card small { margin-top: 4px; color: #718278; }
       .add-button, .sign-out, .lookup-button, menu button, .lookup-result-card { transition: transform .12s ease, box-shadow .12s ease, filter .12s ease; cursor: pointer; }
