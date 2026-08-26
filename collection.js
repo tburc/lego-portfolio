@@ -3,6 +3,7 @@ let valuationHistory = [];
 let currentUser = null;
 let toastTimer;
 let selectedChartPeriod = "ALL";
+let editingItem = null;
 
 const dialog = document.querySelector("#dialog");
 const form = dialog.querySelector("form");
@@ -16,6 +17,13 @@ const valueInput = document.querySelector("#new-value");
 const purchaseInput = document.querySelector("#purchase-price");
 const holdingsList = document.querySelector("#holdings-list");
 const addButton = document.querySelector("#add-set");
+const editDialog = document.querySelector("#edit-dialog");
+const editForm = document.querySelector("#edit-form");
+const editName = document.querySelector("#edit-name");
+const editPurchasePrice = document.querySelector("#edit-purchase-price");
+const editCurrentValue = document.querySelector("#edit-current-value");
+const editResult = document.querySelector("#edit-result");
+const saveEditButton = document.querySelector("#save-edit");
 const price = (value) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(value) || 0);
 
 const levels = [
@@ -218,24 +226,16 @@ function makeAction(label, className, handler) {
   return button;
 }
 
-async function editItem(item) {
-  const paidAnswer = window.prompt(`What did you pay for ${item.name}?`, Number(item.purchase_price || 0).toFixed(2));
-  if (paidAnswer === null) return;
-  const valueAnswer = window.prompt(`What is ${item.name} worth now?`, Number(item.estimated_value).toFixed(2));
-  if (valueAnswer === null) return;
-  const purchasePrice = Number(paidAnswer);
-  const estimatedValue = Number(valueAnswer);
-  if (![purchasePrice, estimatedValue].every((value) => Number.isFinite(value) && value >= 0)) {
-    showToast("Enter valid prices of 0 or more.");
-    return;
-  }
-  const { error } = await window.supabaseClient.from("collection_items").update({ purchase_price: purchasePrice, estimated_value: estimatedValue }).eq("id", item.id);
-  if (error) return showToast(`Could not update: ${error.message}`);
-  item.purchase_price = purchasePrice;
-  item.estimated_value = estimatedValue;
-  await loadHistory();
-  renderCollection();
-  showToast("Value updated.");
+function editItem(item) {
+  editingItem = item;
+  editName.value = item.name;
+  editPurchasePrice.value = Number(item.purchase_price || 0).toFixed(2);
+  editCurrentValue.value = Number(item.estimated_value || 0).toFixed(2);
+  editResult.textContent = "";
+  saveEditButton.disabled = false;
+  saveEditButton.textContent = "Save changes";
+  editDialog.showModal();
+  setTimeout(() => editPurchasePrice.select(), 50);
 }
 
 async function deleteItem(item) {
@@ -425,10 +425,46 @@ form.addEventListener("submit", async (event) => {
   showToast(total === 5 || total === 15 || total === 30 || total === 60 ? `Level up! ${data.name} unlocked a new collector level.` : `${data.name} added. Collection: ${total} item${total === 1 ? "" : "s"}.`);
 });
 
+editForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!editingItem) return;
+  const purchasePrice = Number(editPurchasePrice.value);
+  const estimatedValue = Number(editCurrentValue.value);
+  if (![purchasePrice, estimatedValue].every((value) => Number.isFinite(value) && value >= 0)) {
+    editResult.textContent = "Enter valid prices of 0 or more.";
+    return;
+  }
+  saveEditButton.disabled = true;
+  saveEditButton.textContent = "Saving…";
+  editResult.textContent = "";
+  const { data, error } = await window.supabaseClient
+    .from("collection_items")
+    .update({ purchase_price: purchasePrice, estimated_value: estimatedValue })
+    .eq("id", editingItem.id)
+    .eq("user_id", currentUser.id)
+    .select()
+    .single();
+  if (error) {
+    saveEditButton.disabled = false;
+    saveEditButton.textContent = "Save changes";
+    editResult.textContent = `Could not save: ${error.message}`;
+    return;
+  }
+  const index = collection.findIndex((item) => item.id === data.id);
+  if (index >= 0) collection[index] = data;
+  await loadHistory();
+  renderCollection();
+  editDialog.close();
+  editingItem = null;
+  showToast("Item updated successfully.");
+});
+
 addButton.addEventListener("click", openDialog);
 document.querySelector("#add-from-empty").addEventListener("click", openDialog);
 document.querySelector("#cancel-add").addEventListener("click", () => { resetDialog(); dialog.close("cancel"); });
 dialog.addEventListener("cancel", resetDialog);
+document.querySelector("#cancel-edit").addEventListener("click", () => { editingItem = null; editDialog.close("cancel"); });
+editDialog.addEventListener("close", () => { editingItem = null; editResult.textContent = ""; });
 const chartButton = document.querySelector("#open-chart");
 const chartDialog = document.querySelector("#chart-dialog");
 const openDetailedChart = () => {
