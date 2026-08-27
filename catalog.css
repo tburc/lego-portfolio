@@ -196,6 +196,7 @@ main {
   position: relative;
   display: grid;
   height: 220px;
+  overflow: hidden;
   padding: 20px;
   place-items: center;
   background: linear-gradient(145deg, #f7faf7, #edf3ee);
@@ -203,7 +204,7 @@ main {
   border: 0;
   cursor: zoom-in;
 }
-.product-image-link img { width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply; }
+.product-image-link img { position: absolute; inset: 20px; display: block; width: calc(100% - 40px); height: calc(100% - 40px); object-fit: contain; mix-blend-mode: multiply; }
 .product-image-link.image-missing::after { color: var(--muted); content: "Image unavailable"; font-size: 12px; }
 .product-image-link.image-missing img { display: none; }
 

@@ -110,7 +110,7 @@ function renderProducts(products) {
   products.forEach((product) => {
     const card = cardTemplate.content.cloneNode(true);
     const imageLink = card.querySelector(".product-image-link");
-    const titleLink = card.querySelector("h2 a");
+    const titleLink = card.querySelector(".product-title");
     const image = card.querySelector("img");
 
     titleLink.textContent = product.name;
