@@ -48,6 +48,10 @@ let previewImageIndex = 0;
 let previewRequest = 0;
 let previewProduct = null;
 
+addDialog.addEventListener("click", (event) => {
+  if (event.target === addDialog) addDialog.close();
+});
+
 function renderPreviewImage() {
   previewImage.src = previewImages[previewImageIndex] || "";
   previewCounter.textContent = `${previewImageIndex + 1} / ${previewImages.length || 1}`;

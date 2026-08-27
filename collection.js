@@ -34,6 +34,10 @@ let galleryImages = [];
 let galleryIndex = 0;
 let galleryRequest = 0;
 
+dialog.addEventListener("click", (event) => {
+  if (event.target === dialog) dialog.close();
+});
+
 function renderGalleryImage() {
   galleryImage.src = galleryImages[galleryIndex] || "";
   imageCounter.textContent = `${galleryIndex + 1} / ${galleryImages.length || 1}`;
@@ -464,6 +468,12 @@ galleryImage.addEventListener("click", () => moveGallery(1));
 imageDialog.addEventListener("keydown", (event) => {
   if (event.key === "ArrowLeft") moveGallery(-1);
   if (event.key === "ArrowRight") moveGallery(1);
+});
+
+searchInput.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter") return;
+  event.preventDefault();
+  if (!lookupButton.disabled) lookupButton.click();
 });
 
 lookupButton.addEventListener("click", async () => {
