@@ -53,12 +53,25 @@ async function openGallery(details) {
   galleryIndex = 0;
   galleryImage.alt = `${details.name} LEGO set`;
   renderGalleryImage();
-  imageCounter.textContent = details.bricksetSetId ? "Loading photos…" : "1 / 1";
+  imageCounter.textContent = details.type === "set" ? "Loading photos…" : "1 / 1";
   imageDialog.showModal();
-  if (!details.bricksetSetId) return;
+  let setId = details.bricksetSetId;
+  if (!setId && details.type === "set" && details.number) {
+    try {
+      const { data, error } = await window.supabaseClient.functions.invoke("lookup-set", {
+        body: { query: details.number, includeMinifigures: false, limit: 5 },
+      });
+      if (request !== galleryRequest) return;
+      if (!error && !data?.error) {
+        const match = (data?.results || []).find((item) => item.set_num === details.number);
+        setId = match?.brickset_set_id;
+      }
+    } catch {}
+  }
+  if (!setId) return renderGalleryImage();
   try {
     const { data, error } = await window.supabaseClient.functions.invoke("set-images", {
-      body: { setId: details.bricksetSetId },
+      body: { setId },
     });
     if (request !== galleryRequest) return;
     if (error || data?.error) return renderGalleryImage();
@@ -318,6 +331,18 @@ function renderCollection() {
         image.src = item.image_url;
         image.alt = "";
         tile.append(image);
+        tile.classList.add("has-image");
+        tile.tabIndex = 0;
+        tile.setAttribute("role", "button");
+        tile.setAttribute("aria-label", `View photos of ${item.name}`);
+        const viewPhotos = () => openGallery(itemDetails(item));
+        tile.addEventListener("click", viewPhotos);
+        tile.addEventListener("keydown", (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            viewPhotos();
+          }
+        });
       } else tile.textContent = item.item_type === "minifigure" ? "M" : "◆";
       const description = document.createElement("div");
       const name = document.createElement("strong");
@@ -375,7 +400,7 @@ const itemDetails = (item) => {
   const type = item.type || item.item_type || (item.fig_num || item.minifig_num ? "minifigure" : "set");
   return {
     name: item.name || item.descr || "Unnamed LEGO item",
-    number: item.set_num || item.fig_num || item.minifig_num || item.number || item.id || "",
+    number: item.set_num || item.fig_num || item.minifig_num || item.item_number || item.number || item.id || "",
     type,
     image: item.set_img_url || item.img_big || item.img_sm || item.img_tn || item.image_url || item.image || "",
     year: item.year || "",

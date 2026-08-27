@@ -70,6 +70,9 @@
       .add-button.celebrate { animation: pop .45s ease; }
       .tile { overflow: hidden; flex: 0 0 auto; }
       .tile img { width: 100%; height: 100%; object-fit: contain; background: #fff; }
+      .tile.has-image { cursor: zoom-in; transition: transform .12s ease, box-shadow .12s ease; }
+      .tile.has-image:hover { box-shadow: 0 5px 12px #10261d2b; transform: scale(1.08); }
+      .tile.has-image:focus-visible { outline: 3px solid #e8b84c; outline-offset: 2px; }
       .lookup-result-card img { cursor: zoom-in; }
       .image-dialog { width: min(92vw, 720px); }
       .image-dialog-content { position: relative; display: grid; min-height: 460px; padding: 22px; place-items: center; overflow: hidden; border-radius: 10px; background: #f4f7f4; }
