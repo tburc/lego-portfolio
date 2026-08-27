@@ -26,6 +26,7 @@ const previewDialog = document.querySelector("#preview-dialog");
 const previewImage = document.querySelector("#preview-image");
 const previewName = document.querySelector("#preview-name");
 const previewMeta = document.querySelector("#preview-meta");
+const previewBricksetLink = document.querySelector("#preview-brickset-link");
 
 let currentPage = 1;
 let totalProducts = 0;
@@ -42,6 +43,7 @@ function showPreview(product) {
   previewImage.alt = `${product.name} LEGO set`;
   previewName.textContent = product.name;
   previewMeta.textContent = `Set ${product.set_num} · ${product.year} · ${Number(product.num_parts).toLocaleString()} pieces`;
+  previewBricksetLink.href = `https://brickset.com/sets/${encodeURIComponent(product.set_num)}`;
   previewDialog.showModal();
 }
 
