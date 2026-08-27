@@ -98,13 +98,13 @@
 
     <template id="product-card-template">
       <article class="product-card">
-        <a class="product-image-link" target="_blank" rel="noopener noreferrer">
+        <button class="product-image-link" type="button" aria-label="View larger set image">
           <span class="featured-badge" hidden>Featured</span>
           <img loading="lazy" alt="" />
-        </a>
+        </button>
         <div class="product-content">
           <div class="source-tag"><span></span> Rebrickable catalog</div>
-          <h2><a target="_blank" rel="noopener noreferrer"></a></h2>
+          <h2><button class="product-title" type="button"></button></h2>
           <p class="set-number"></p>
           <dl>
             <div><dt>Theme</dt><dd class="theme-name"></dd></div>
@@ -112,13 +112,21 @@
             <div><dt>Pieces</dt><dd class="piece-count"></dd></div>
           </dl>
           <div class="price-status">
-            <span>Resale prices</span>
-            <strong>Comparison coming soon</strong>
+            <span>Original retail</span>
+            <strong class="retail-price">Checking…</strong>
           </div>
           <button class="add-to-portfolio" type="button">Add to portfolio</button>
         </div>
       </article>
     </template>
+
+    <dialog id="preview-dialog" class="preview-dialog">
+      <div class="preview-content">
+        <button id="close-preview" class="preview-close" type="button" aria-label="Close image">×</button>
+        <img id="preview-image" alt="" />
+        <div><p class="eyebrow">LEGO SET</p><h2 id="preview-name"></h2><p id="preview-meta"></p></div>
+      </div>
+    </dialog>
 
     <dialog id="add-dialog">
       <form id="add-form">

@@ -22,6 +22,10 @@ const addPurchasePrice = document.querySelector("#add-purchase-price");
 const addCurrentValue = document.querySelector("#add-current-value");
 const saveAddButton = document.querySelector("#save-add");
 const catalogToast = document.querySelector("#catalog-toast");
+const previewDialog = document.querySelector("#preview-dialog");
+const previewImage = document.querySelector("#preview-image");
+const previewName = document.querySelector("#preview-name");
+const previewMeta = document.querySelector("#preview-meta");
 
 let currentPage = 1;
 let totalProducts = 0;
@@ -29,6 +33,33 @@ let searchTimer;
 let currentUser = null;
 let selectedProduct = null;
 let toastTimer;
+const retailPrices = new Map();
+let retailPriceRequest = Promise.resolve();
+
+function showPreview(product) {
+  previewImage.src = product.image_url || "";
+  previewImage.alt = `${product.name} LEGO set`;
+  previewName.textContent = product.name;
+  previewMeta.textContent = `Set ${product.set_num} · ${product.year} · ${Number(product.num_parts).toLocaleString()} pieces`;
+  previewDialog.showModal();
+}
+
+async function loadRetailPrices(products) {
+  const setNumbers = products.map((product) => product.set_num).filter(Boolean);
+  if (!setNumbers.length) return;
+  try {
+    const { data, error } = await window.supabaseClient.functions.invoke("brickset-prices", { body: { setNumbers } });
+    if (error || data?.error) throw new Error(data?.error || error.message);
+    (data.results || []).forEach((item) => retailPrices.set(item.set_num, Number(item.retail_price) || null));
+  } catch {
+    setNumbers.forEach((setNumber) => retailPrices.set(setNumber, null));
+  }
+  productGrid.querySelectorAll(".product-card").forEach((card) => {
+    const setNumber = card.dataset.setNumber;
+    const value = retailPrices.get(setNumber);
+    card.querySelector(".retail-price").textContent = value ? `$${value.toFixed(2)}` : "Not available";
+  });
+}
 
 function showToast(message) {
   clearTimeout(toastTimer);
@@ -43,30 +74,20 @@ async function openAddDialog(product) {
     document.querySelector("#account-link").focus();
     return;
   }
+  await retailPriceRequest;
   selectedProduct = product;
   addSetName.textContent = product.name;
   addPurchasePrice.value = "";
   addCurrentValue.value = "";
-  addPriceStatus.textContent = "Checking the original U.S. retail price…";
-  addDialog.showModal();
-
-  try {
-    const { data, error } = await window.supabaseClient.functions.invoke("lookup-set", {
-      body: { query: product.set_num, includeMinifigures: false, limit: 5 },
-    });
-    if (error || data?.error) throw new Error(data?.error || error.message);
-    const match = (data?.results || []).find((item) => item.set_num === product.set_num);
-    const retailPrice = Number(match?.retail_price);
-    if (Number.isFinite(retailPrice) && retailPrice > 0) {
-      addPurchasePrice.value = retailPrice.toFixed(2);
-      addCurrentValue.value = retailPrice.toFixed(2);
-      addPriceStatus.textContent = "Original U.S. retail price filled from Brickset. Change it if you paid a different amount.";
-    } else {
-      addPriceStatus.textContent = "No original retail price was found. Enter what you paid and its current value.";
-    }
-  } catch {
-    addPriceStatus.textContent = "Price lookup is unavailable. You can still enter both values manually.";
+  const retailPrice = retailPrices.get(product.set_num);
+  if (retailPrice) {
+    addPurchasePrice.value = retailPrice.toFixed(2);
+    addCurrentValue.value = retailPrice.toFixed(2);
+    addPriceStatus.textContent = "Original U.S. retail price filled from Brickset. Change it if you paid a different amount.";
+  } else {
+    addPriceStatus.textContent = "No original retail price was found. Enter what you paid and its current value.";
   }
+  addDialog.showModal();
 }
 
 function safeSearchTerm(value) {
@@ -92,8 +113,6 @@ function renderProducts(products) {
     const titleLink = card.querySelector("h2 a");
     const image = card.querySelector("img");
 
-    imageLink.href = product.source_url;
-    titleLink.href = product.source_url;
     titleLink.textContent = product.name;
     image.src = product.image_url;
     image.alt = `${product.name} LEGO set`;
@@ -103,6 +122,9 @@ function renderProducts(products) {
     card.querySelector(".theme-name").textContent = product.theme?.name || "Other";
     card.querySelector(".set-year").textContent = product.year;
     card.querySelector(".piece-count").textContent = Number(product.num_parts).toLocaleString();
+    card.querySelector(".product-card").dataset.setNumber = product.set_num;
+    imageLink.addEventListener("click", () => showPreview(product));
+    titleLink.addEventListener("click", () => showPreview(product));
     card.querySelector(".add-to-portfolio").addEventListener("click", () => openAddDialog(product));
     productGrid.append(card);
   });
@@ -171,6 +193,7 @@ async function loadProducts() {
     ? `Showing ${from + 1}–${lastShown} of ${totalProducts} products`
     : "0 products";
   renderProducts(data);
+  retailPriceRequest = loadRetailPrices(data);
   emptyState.hidden = data.length > 0;
   updateFilterState();
   updatePagination();
@@ -244,6 +267,7 @@ nextPage.addEventListener("click", () => {
 
 document.querySelector("#close-add").addEventListener("click", () => addDialog.close());
 document.querySelector("#cancel-add").addEventListener("click", () => addDialog.close());
+document.querySelector("#close-preview").addEventListener("click", () => previewDialog.close());
 addForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!currentUser || !selectedProduct) return;
