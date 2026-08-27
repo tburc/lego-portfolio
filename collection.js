@@ -461,11 +461,11 @@ function showSearchItems(items) {
   lookupResults.hidden = false;
 }
 
-document.querySelector("#image-close").addEventListener("click", () => imageDialog.close());
-imagePrevious.addEventListener("click", () => moveGallery(-1));
-imageNext.addEventListener("click", () => moveGallery(1));
-galleryImage.addEventListener("click", () => moveGallery(1));
-imageDialog.addEventListener("keydown", (event) => {
+document.querySelector("#image-close")?.addEventListener("click", () => imageDialog?.close());
+imagePrevious?.addEventListener("click", () => moveGallery(-1));
+imageNext?.addEventListener("click", () => moveGallery(1));
+galleryImage?.addEventListener("click", () => moveGallery(1));
+imageDialog?.addEventListener("keydown", (event) => {
   if (event.key === "ArrowLeft") moveGallery(-1);
   if (event.key === "ArrowRight") moveGallery(1);
 });
