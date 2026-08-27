@@ -33,6 +33,7 @@ let searchTimer;
 let currentUser = null;
 let selectedProduct = null;
 let toastTimer;
+let loadSequence = 0;
 const retailPrices = new Map();
 let retailPriceRequest = Promise.resolve();
 
@@ -144,10 +145,54 @@ function updatePagination() {
 }
 
 async function loadProducts() {
+  const sequence = ++loadSequence;
   productGrid.setAttribute("aria-busy", "true");
   catalogError.textContent = "";
   emptyState.hidden = true;
   renderSkeletons();
+
+  const search = safeSearchTerm(searchInput.value);
+  if (search) {
+    const { data, error } = await window.supabaseClient.functions.invoke("lookup-set", {
+      body: { query: search, includeMinifigures: false, limit: 20 },
+    });
+    if (sequence !== loadSequence) return;
+    productGrid.setAttribute("aria-busy", "false");
+    if (error || data?.error) {
+      productGrid.replaceChildren();
+      resultCount.textContent = "Search unavailable";
+      catalogError.textContent = `LEGO search could not load: ${data?.error || error.message}`;
+      pagination.hidden = true;
+      return;
+    }
+    const products = (data?.results || [])
+      .filter((item) => item.type === "set")
+      .map((item) => {
+        const retailPrice = Number(item.retail_price) || null;
+        retailPrices.set(item.set_num, retailPrice);
+        return {
+          set_num: item.set_num,
+          name: item.name,
+          year: item.year,
+          num_parts: item.num_parts,
+          image_url: item.set_img_url,
+          source_url: `https://rebrickable.com/sets/${encodeURIComponent(item.set_num)}/`,
+          is_featured: false,
+          theme: { name: "LEGO catalog" },
+        };
+      });
+    totalProducts = products.length;
+    resultCount.textContent = `${products.length} matching set${products.length === 1 ? "" : "s"} from the wider LEGO catalog`;
+    renderProducts(products);
+    productGrid.querySelectorAll(".product-card").forEach((card) => {
+      const value = retailPrices.get(card.dataset.setNumber);
+      card.querySelector(".retail-price").textContent = value ? `$${value.toFixed(2)}` : "Not available";
+    });
+    emptyState.hidden = products.length > 0;
+    pagination.hidden = true;
+    updateFilterState();
+    return;
+  }
 
   const from = (currentPage - 1) * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
@@ -158,8 +203,6 @@ async function loadProducts() {
       { count: "exact" },
     );
 
-  const search = safeSearchTerm(searchInput.value);
-  if (search) query = query.or(`name.ilike.%${search}%,set_num.ilike.%${search}%`);
   if (themeFilter.value) query = query.eq("theme_id", Number(themeFilter.value));
   if (yearFilter.value) query = query.eq("year", Number(yearFilter.value));
 
@@ -177,6 +220,7 @@ async function loadProducts() {
   }
 
   const { data, error, count } = await query.range(from, to);
+  if (sequence !== loadSequence) return;
   productGrid.setAttribute("aria-busy", "false");
 
   if (error) {
