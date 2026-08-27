@@ -1,1 +1,11 @@
 supabase/.temp/
+.env
+.env.*
+!.env.example
+
+# Raw Rebrickable downloads. The curated catalog is stored in the seed migration.
+sets.csv/
+themes.csv/
+minifigs.csv/
+inventories.csv/
+inventory_minifigs.csv/

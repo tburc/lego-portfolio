@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Secure legofolio administrator sign in." />
+    <title>legofolio — Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="admin.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="legofolio home">
+        <span class="brand-mark" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
+        </span>
+        <span>legofolio</span>
+      </a>
+      <a class="back-link" href="dashboard.html">Back to portfolio</a>
+    </header>
+
+    <main>
+      <section class="auth-card" id="loading-view" aria-live="polite">
+        <div class="loader" aria-hidden="true"></div>
+        <p>Checking your session…</p>
+      </section>
+
+      <section class="auth-card" id="login-view" hidden aria-labelledby="login-title">
+        <p class="eyebrow">ADMINISTRATION</p>
+        <h1 id="login-title">Admin sign in</h1>
+        <p class="lede">Use the admin account you created in Supabase. This account can be reused every time.</p>
+
+        <form id="admin-login-form" novalidate>
+          <label for="admin-email">Email address</label>
+          <input id="admin-email" type="email" autocomplete="email" required />
+
+          <label for="admin-password">Password</label>
+          <input id="admin-password" type="password" autocomplete="current-password" required />
+
+          <button class="primary-button" id="admin-login-button" type="submit">Sign in as admin</button>
+          <p class="notice" id="login-notice" role="status" aria-live="polite"></p>
+        </form>
+
+        <p class="help-text">Admin accounts are created once and protected by Supabase Auth. There is no admin sign-up from this page.</p>
+      </section>
+
+      <section class="auth-card denied-card" id="denied-view" hidden aria-labelledby="denied-title">
+        <span class="status-icon" aria-hidden="true">!</span>
+        <p class="eyebrow">ACCESS DENIED</p>
+        <h1 id="denied-title">This account is not an admin</h1>
+        <p id="denied-message"></p>
+        <div class="button-row">
+          <a class="secondary-button" href="dashboard.html">Open my portfolio</a>
+          <button class="primary-button" id="switch-account" type="button">Use another account</button>
+        </div>
+      </section>
+
+      <section class="admin-shell" id="admin-view" hidden aria-labelledby="admin-title">
+        <header class="admin-heading">
+          <div>
+            <p class="eyebrow">ADMINISTRATION</p>
+            <h1 id="admin-title">legofolio control room</h1>
+            <p id="admin-identity"></p>
+          </div>
+          <button class="secondary-button" id="admin-sign-out" type="button">Sign out</button>
+        </header>
+
+        <section class="stats-grid" aria-label="Site overview">
+          <article>
+            <span>Registered users</span>
+            <strong id="total-users">—</strong>
+          </article>
+          <article>
+            <span>Collection items</span>
+            <strong id="total-items">—</strong>
+          </article>
+          <article>
+            <span>Active collectors</span>
+            <strong id="active-collectors">—</strong>
+          </article>
+          <article>
+            <span>Tracked value</span>
+            <strong id="tracked-value">—</strong>
+          </article>
+          <article>
+            <span>Catalog products</span>
+            <strong id="catalog-products">—</strong>
+          </article>
+        </section>
+
+        <section class="admin-panel">
+          <div>
+            <p class="eyebrow">STATUS</p>
+            <h2>Admin access is working</h2>
+            <p>Your role was verified by Supabase before these site totals were returned.</p>
+          </div>
+          <div class="status-list">
+            <p><span>Authentication</span><strong>Supabase Auth</strong></p>
+            <p><span>Authorization</span><strong>Database role + RLS</strong></p>
+            <p><span>Latest signup</span><strong id="latest-user">—</strong></p>
+          </div>
+        </section>
+
+        <section class="catalog-admin-panel">
+          <header>
+            <div>
+              <p class="eyebrow">CATALOG MANAGEMENT</p>
+              <h2>Featured and visible sets</h2>
+              <p>Changes here appear on the public product page immediately.</p>
+            </div>
+            <label class="admin-search">
+              <span class="sr-only">Search catalog products</span>
+              <input id="admin-product-search" type="search" placeholder="Search name or set number" />
+            </label>
+          </header>
+          <div class="admin-product-list" id="admin-product-list" aria-live="polite"></div>
+          <p class="admin-list-status" id="admin-list-status"></p>
+        </section>
+
+        <p class="notice" id="admin-notice" role="status" aria-live="polite"></p>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="admin.js"></script>
+  </body>
+</html>

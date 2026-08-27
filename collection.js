@@ -492,6 +492,8 @@ async function initialize() {
   document.querySelector("#profile-name").textContent = username;
   document.querySelector("#welcome-message").textContent = `Good afternoon, ${username}.`;
   document.querySelector(".avatar").textContent = username.slice(0, 2).toUpperCase();
+  const { data: isAdmin } = await window.supabaseClient.rpc("is_admin");
+  document.querySelector("#admin-nav-link").hidden = !isAdmin;
   renderWatchlist();
   await loadCollection();
 }

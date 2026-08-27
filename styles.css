@@ -141,12 +141,20 @@ a {
   letter-spacing: -2.8px;
 }
 
-.intro-copy > p:last-child {
+.intro-copy > p:not(.eyebrow) {
   max-width: 520px;
   margin: 25px 0 0;
   color: rgba(255, 255, 255, 0.7);
   font-size: 17px;
   line-height: 1.75;
+}
+
+.browse-link {
+  display: inline-flex;
+  margin-top: 22px;
+  color: #e8b84c;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .intro-note {
@@ -445,6 +453,12 @@ a:hover {
   text-align: center;
 }
 
+.admin-signin {
+  margin: 9px 0 0;
+  font-size: 12px;
+  text-align: center;
+}
+
 .notice {
   display: none;
   margin-top: 18px;
@@ -515,7 +529,7 @@ input:focus-visible {
     margin-top: 58px;
   }
 
-  .intro-copy > p:last-child {
+  .intro-copy > p:not(.eyebrow) {
     font-size: 15px;
     line-height: 1.6;
   }
