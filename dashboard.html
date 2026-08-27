@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="dashboard.css" />
     <style>
       .dashboard-actions { display: flex; align-items: center; gap: 10px; }
+      .browse-button { padding: 10px 12px; border: 1px solid #cfe0d5; border-radius: 8px; color: #147a47; background: #f1f8f3; font-size: 12px; font-weight: 800; text-decoration: none; }
+      .browse-button:hover { border-color: #147a47; background: #e5f4e9; }
       .sign-out { padding: 10px 12px; border: 1px solid #e5ebe6; border-radius: 8px; color: #4d6257; background: #fff; font-size: 12px; font-weight: 700; }
       .lookup-button { padding: 10px 12px; border: 0; border-radius: 8px; color: #fff; background: #147a47; font-weight: 700; }
       .lookup-button:disabled, #save-set:disabled { cursor: wait; opacity: .6; }
@@ -73,7 +75,7 @@
       #mix-donut small, #mix-donut { isolation: isolate; }
       #mix-donut small { position: relative; z-index: 1; }
       @media (max-width: 700px) { .hero { display: block; } .hero-insights { width: 100%; margin-top: 20px; } .level-card { width: 100%; } }
-      @media (max-width: 600px) { .holding { flex-wrap: wrap; padding: 10px 0; } .holding-actions { width: 100%; justify-content: flex-end; } .lookup-result-card.selected { grid-template-columns: 88px minmax(0, 1fr); min-height: 108px; } .lookup-result-card.selected img { width: 88px; height: 88px; } .toast { right: 14px; bottom: 14px; left: 14px; } }
+      @media (max-width: 600px) { .topbar { align-items: flex-start; gap: 14px; } .dashboard-actions { flex-wrap: wrap; justify-content: flex-end; } .browse-button { order: 3; } .holding { flex-wrap: wrap; padding: 10px 0; } .holding-actions { width: 100%; justify-content: flex-end; } .lookup-result-card.selected { grid-template-columns: 88px minmax(0, 1fr); min-height: 108px; } .lookup-result-card.selected img { width: 88px; height: 88px; } .toast { right: 14px; bottom: 14px; left: 14px; } }
       @keyframes pop { 50% { transform: scale(1.12) rotate(-2deg); } }
     </style>
   </head>
@@ -85,7 +87,7 @@
         <div class="profile"><span class="avatar">TB</span><span><strong id="profile-name">Collector</strong><small>Collector</small></span></div>
       </aside>
       <main id="overview">
-        <header class="topbar"><div><p class="eyebrow">COLLECTION OVERVIEW</p><h1 id="welcome-message">Good afternoon.</h1></div><div class="dashboard-actions"><button class="sign-out" id="sign-out">Sign out</button><button class="add-button" id="add-set">+ Add a set</button></div></header>
+        <header class="topbar"><div><p class="eyebrow">COLLECTION OVERVIEW</p><h1 id="welcome-message">Good afternoon.</h1></div><div class="dashboard-actions"><a class="browse-button" href="catalog.html">Browse sets</a><button class="sign-out" id="sign-out">Sign out</button><button class="add-button" id="add-set">+ Add a set</button></div></header>
         <section class="hero"><div><p class="eyebrow">TOTAL COLLECTION VALUE</p><h2 id="total-value">$0.00</h2><p id="portfolio-gain">$0.00 (0.0%) all time</p><small id="collection-message">Add your first item to begin.</small></div><div class="hero-insights"><div class="value-chart" id="open-chart" role="button" tabindex="0" aria-label="Open detailed portfolio return chart"><header><span>PORTFOLIO RETURN</span><span id="chart-caption">No history yet</span></header><svg viewBox="0 0 400 80" preserveAspectRatio="none" role="img" aria-label="Portfolio return over time"><path id="value-area" d="M0 72 L400 72 L400 80 L0 80Z"/><path id="value-line" d="M0 72 L400 72"/><circle id="value-dot" cx="400" cy="72" r="5"/></svg></div><div class="level-card"><div class="level-row"><span id="collector-level">Level 1 · Brick Starter</span><span id="level-count">0 / 5</span></div><div class="level-bar"><span id="level-progress"></span></div><small id="next-milestone">5 items until your next collector level</small></div></div></section>
         <section class="stats"><article><p>SETS OWNED</p><strong id="set-count">0</strong><span id="set-detail">Start your collection</span></article><article><p>MINIFIGURES</p><strong id="minifigure-count">0</strong><span id="minifigure-detail">Add figures you own</span></article><article><p>ITEMS ADDED</p><strong id="item-count">0</strong><span id="item-detail">Your collection is ready</span></article><article><p>MOST VALUABLE</p><strong id="best-value">$0.00</strong><span id="best-item">No items yet</span></article></section>
         <section class="layout"><section class="panel" id="holdings"><header><div><p class="eyebrow">YOUR COLLECTION</p><h2>Every build tells a story</h2></div><button id="add-from-empty">Add item +</button></header><div id="holdings-list"></div></section><aside><section class="panel" id="watchlist"><header><div><p class="eyebrow">ON YOUR RADAR</p><h2>Watchlist</h2></div></header><div id="watchlist-list"></div></section><section class="panel mix"><p class="eyebrow">BY CATEGORY</p><h2>Collection mix</h2><div class="mix-content"><div class="donut" id="mix-donut">0<small>%</small></div><p>● Sets <b id="set-mix">0%</b><br />● Minifigures <b id="minifigure-mix">0%</b></p></div></section></aside></section>
