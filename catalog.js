@@ -35,6 +35,7 @@ let currentUser = null;
 let selectedProduct = null;
 let toastTimer;
 let loadSequence = 0;
+let allThemesPromise;
 const retailPrices = new Map();
 let retailPriceRequest = Promise.resolve();
 
@@ -45,6 +46,62 @@ function showPreview(product) {
   previewMeta.textContent = `Set ${product.set_num} · ${product.year} · ${Number(product.num_parts).toLocaleString()} pieces`;
   previewBricksetLink.href = `https://brickset.com/sets/${encodeURIComponent(product.set_num)}`;
   previewDialog.showModal();
+}
+
+const compactSearch = (value) => value.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+async function categoryThemeIds(search) {
+  const aliases = {
+    mincraft: "minecraft",
+    minecarft: "minecraft",
+    minecraf: "minecraft",
+    starwar: "starwars",
+  };
+  const compact = aliases[compactSearch(search)] || compactSearch(search);
+  if (!compact) return [];
+  allThemesPromise ||= window.supabaseClient.from("lego_themes").select("id,name,parent_id").limit(2000);
+  const { data: themes, error } = await allThemesPromise;
+  if (error || !themes) return [];
+  const roots = themes.filter((theme) => compactSearch(theme.name) === compact).map((theme) => theme.id);
+  if (!roots.length) return [];
+  const ids = new Set(roots);
+  let added = true;
+  while (added) {
+    added = false;
+    themes.forEach((theme) => {
+      if (theme.parent_id && ids.has(theme.parent_id) && !ids.has(theme.id)) {
+        ids.add(theme.id);
+        added = true;
+      }
+    });
+  }
+  return [...ids];
+}
+
+async function loadCategory(search, sequence) {
+  const themeIds = await categoryThemeIds(search);
+  if (!themeIds.length || sequence !== loadSequence) return false;
+  const { data, error, count } = await window.supabaseClient
+    .from("lego_sets")
+    .select(
+      "set_num,name,year,num_parts,image_url,source_url,is_featured,display_order,theme:lego_themes(name)",
+      { count: "exact" },
+    )
+    .in("theme_id", themeIds)
+    .order("year", { ascending: false })
+    .order("name")
+    .range(0, PAGE_SIZE - 1);
+  if (sequence !== loadSequence) return true;
+  if (error) throw error;
+  totalProducts = count || 0;
+  resultCount.textContent = `Showing ${data.length} of ${totalProducts} sets in this LEGO theme`;
+  renderProducts(data);
+  retailPriceRequest = loadRetailPrices(data);
+  emptyState.hidden = data.length > 0;
+  pagination.hidden = true;
+  updateFilterState();
+  productGrid.setAttribute("aria-busy", "false");
+  return true;
 }
 
 async function loadRetailPrices(products) {
@@ -155,6 +212,12 @@ async function loadProducts() {
 
   const search = safeSearchTerm(searchInput.value);
   if (search) {
+    try {
+      if (await loadCategory(search, sequence)) return;
+    } catch (error) {
+      if (sequence !== loadSequence) return;
+      catalogError.textContent = `Theme search could not load: ${error.message}`;
+    }
     const { data, error } = await window.supabaseClient.functions.invoke("lookup-set", {
       body: { query: search, includeMinifigures: false, limit: 20 },
     });
