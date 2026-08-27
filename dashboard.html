@@ -14,11 +14,12 @@
       .lookup-button { padding: 10px 12px; border: 0; border-radius: 8px; color: #fff; background: #147a47; font-weight: 700; }
       .lookup-button:disabled, #save-set:disabled { cursor: wait; opacity: .6; }
       .lookup-result { min-height: 18px; margin: -4px 0 0; color: #147a47; font-size: 12px; font-weight: 600; }
-      .lookup-results { display: grid; max-height: 250px; gap: 8px; overflow-y: auto; }
-      .lookup-result-card { display: grid; grid-template-columns: 58px 1fr; gap: 10px; width: 100%; padding: 9px; border: 1px solid #e5ebe6; border-radius: 8px; text-align: left; background: #fff; cursor: pointer; }
+      .lookup-results { display: grid; grid-auto-rows: max-content; max-height: 250px; gap: 8px; overflow-x: hidden; overflow-y: auto; }
+      .lookup-result-card { display: grid; grid-template-columns: 58px minmax(0, 1fr); align-items: center; gap: 10px; width: 100%; min-width: 0; overflow: hidden; padding: 9px; border: 1px solid #e5ebe6; border-radius: 8px; text-align: left; background: #fff; cursor: pointer; }
       .lookup-result-card:hover, .lookup-result-card.selected { border-color: #147a47; background: #f0f8f3; }
-      .lookup-result-card img { width: 58px; height: 58px; object-fit: contain; }
-      .lookup-result-card.selected { grid-template-columns: 118px 1fr; }
+      .lookup-result-card img { display: block; width: 58px; height: 58px; max-width: 100%; object-fit: contain; }
+      .lookup-result-card > span { min-width: 0; overflow-wrap: anywhere; }
+      .lookup-result-card.selected { grid-template-columns: minmax(0, 118px) minmax(0, 1fr); min-height: 138px; }
       .lookup-result-card.selected img { width: 118px; height: 118px; border-radius: 7px; background: #fff; transition: width .18s ease, height .18s ease; }
       .lookup-result-card strong, .lookup-result-card small { display: block; }
       .lookup-result-card small { margin-top: 4px; color: #718278; }
@@ -72,7 +73,7 @@
       #mix-donut small, #mix-donut { isolation: isolate; }
       #mix-donut small { position: relative; z-index: 1; }
       @media (max-width: 700px) { .hero { display: block; } .hero-insights { width: 100%; margin-top: 20px; } .level-card { width: 100%; } }
-      @media (max-width: 600px) { .holding { flex-wrap: wrap; padding: 10px 0; } .holding-actions { width: 100%; justify-content: flex-end; } .toast { right: 14px; bottom: 14px; left: 14px; } }
+      @media (max-width: 600px) { .holding { flex-wrap: wrap; padding: 10px 0; } .holding-actions { width: 100%; justify-content: flex-end; } .lookup-result-card.selected { grid-template-columns: 88px minmax(0, 1fr); min-height: 108px; } .lookup-result-card.selected img { width: 88px; height: 88px; } .toast { right: 14px; bottom: 14px; left: 14px; } }
       @keyframes pop { 50% { transform: scale(1.12) rotate(-2deg); } }
     </style>
   </head>
