@@ -292,6 +292,8 @@ dialog::backdrop { background: rgba(16, 38, 29, .58); }
 #preview-meta { color: var(--muted); }
 .brickset-link { display: inline-block; margin-top: 8px; color: var(--green); font-size: 13px; font-weight: 800; text-decoration: none; }
 .brickset-link:hover { text-decoration: underline; }
+.preview-add { display: block; width: 100%; min-height: 44px; margin-top: 18px; border: 0; border-radius: 8px; color: #fff; background: var(--green); font-weight: 800; cursor: pointer; }
+.preview-add:hover { background: var(--green-dark); }
 .preview-close { position: absolute; top: 12px; right: 14px; z-index: 1; border: 0; color: var(--muted); background: transparent; font-size: 28px; cursor: pointer; }
 
 .pagination { display: flex; margin-top: 34px; align-items: center; justify-content: center; gap: 17px; }

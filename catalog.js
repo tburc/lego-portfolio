@@ -27,6 +27,7 @@ const previewImage = document.querySelector("#preview-image");
 const previewName = document.querySelector("#preview-name");
 const previewMeta = document.querySelector("#preview-meta");
 const previewBricksetLink = document.querySelector("#preview-brickset-link");
+const previewAddButton = document.querySelector("#preview-add");
 const previewPrevious = document.querySelector("#preview-previous");
 const previewNext = document.querySelector("#preview-next");
 const previewCounter = document.querySelector("#preview-counter");
@@ -45,6 +46,7 @@ let retailPriceRequest = Promise.resolve();
 let previewImages = [];
 let previewImageIndex = 0;
 let previewRequest = 0;
+let previewProduct = null;
 
 function renderPreviewImage() {
   previewImage.src = previewImages[previewImageIndex] || "";
@@ -60,6 +62,7 @@ function movePreview(direction) {
 }
 
 async function showPreview(product) {
+  previewProduct = product;
   const request = ++previewRequest;
   previewImages = [product.image_url].filter(Boolean);
   previewImageIndex = 0;
@@ -427,6 +430,12 @@ document.querySelector("#close-preview").addEventListener("click", () => preview
 previewPrevious.addEventListener("click", () => movePreview(-1));
 previewNext.addEventListener("click", () => movePreview(1));
 previewImage.addEventListener("click", () => movePreview(1));
+previewAddButton.addEventListener("click", () => {
+  if (!previewProduct) return;
+  const product = previewProduct;
+  previewDialog.close();
+  openAddDialog(product);
+});
 previewDialog.addEventListener("keydown", (event) => {
   if (event.key === "ArrowLeft") movePreview(-1);
   if (event.key === "ArrowRight") movePreview(1);
