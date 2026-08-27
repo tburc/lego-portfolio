@@ -75,14 +75,14 @@
       .tile.has-image:focus-visible { outline: 3px solid #e8b84c; outline-offset: 2px; }
       .lookup-result-card img { cursor: zoom-in; }
       .image-dialog { width: min(92vw, 720px); }
-      .image-dialog-content { position: relative; display: grid; min-height: 460px; padding: 22px; place-items: center; overflow: hidden; border-radius: 10px; background: #f4f7f4; }
-      .image-dialog-content img { display: block; width: 100%; height: 430px; object-fit: contain; }
-      .image-dialog .gallery-arrow { position: absolute; top: 0; z-index: 2; display: grid; width: 64px; height: 100%; padding: 0; border: 0; border-radius: 0; place-items: center; color: #fff; background: transparent; font-size: 42px; cursor: pointer; text-shadow: 0 2px 8px #0b3523; transition: background .12s ease, opacity .12s ease; }
-      .image-dialog .gallery-arrow.previous { left: 0; background: linear-gradient(90deg, #0b352377, transparent); }
-      .image-dialog .gallery-arrow.next { right: 0; background: linear-gradient(270deg, #0b352377, transparent); }
-      .image-dialog .gallery-arrow:hover:not(:disabled) { background-color: #0b35233d; }
-      .image-dialog .gallery-arrow:disabled { opacity: .22; cursor: wait; }
-      .image-counter { position: absolute; right: 12px; bottom: 12px; padding: 5px 8px; border-radius: 999px; color: #fff; background: #0b3523cc; font-size: 11px; font-weight: 800; }
+      .image-dialog-content { position: relative; display: grid; min-height: 460px; padding: 18px 18px 64px; place-items: center; overflow: hidden; border-radius: 10px; background: #f4f7f4; }
+      .image-dialog-content img { display: block; width: 100%; height: 390px; object-fit: contain; }
+      .image-dialog .gallery-arrow { position: absolute; bottom: 11px; z-index: 2; display: grid; width: 38px; height: 38px; padding: 0; border: 2px solid #fff; border-radius: 50%; place-items: center; color: #fff; background: #147a47; box-shadow: 0 3px 10px #10261d33; font-size: 28px; cursor: pointer; transition: background .12s ease, transform .12s ease; }
+      .image-dialog .gallery-arrow.previous { left: calc(50% - 86px); }
+      .image-dialog .gallery-arrow.next { right: calc(50% - 86px); }
+      .image-dialog .gallery-arrow:hover:not(:disabled) { background: #0b3523; transform: scale(1.06); }
+      .image-dialog .gallery-arrow:disabled { visibility: hidden; }
+      .image-counter { position: absolute; bottom: 20px; left: 50%; min-width: 62px; color: #0b3523; font-size: 11px; font-weight: 800; text-align: center; transform: translateX(-50%); }
       .image-close { position: absolute; top: 10px; right: 12px; z-index: 3; padding: 5px 9px; border: 0; border-radius: 50%; color: #fff; background: #0b3523cc; font-size: 20px; cursor: pointer; }
       #mix-donut { position: relative; border: 0; }
       #mix-donut::before { position: absolute; inset: 18px; border-radius: 50%; background: #fff; content: ""; }

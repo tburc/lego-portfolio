@@ -280,14 +280,14 @@ dialog::backdrop { background: rgba(16, 38, 29, .58); }
 .preview-dialog { width: min(92vw, 760px); }
 .preview-dialog::backdrop { background: rgba(16, 38, 29, .28); }
 .preview-content { position: relative; display: grid; padding: 28px; grid-template-columns: minmax(260px, 1.4fr) 1fr; align-items: center; gap: 28px; }
-.preview-gallery { position: relative; display: grid; min-height: 360px; place-items: center; overflow: hidden; border-radius: 10px; background: #f4f7f4; }
+.preview-gallery { position: relative; display: grid; min-height: 360px; padding: 14px 14px 62px; place-items: center; overflow: hidden; border-radius: 10px; background: #f4f7f4; }
 .preview-content img { display: block; width: 100%; height: 100%; max-height: 480px; object-fit: contain; }
-.gallery-arrow { position: absolute; top: 50%; z-index: 2; display: grid; width: 52px; height: 52px; border: 3px solid #fff; border-radius: 50%; place-items: center; color: #fff; background: var(--green); box-shadow: 0 5px 16px rgba(11, 53, 35, .25); font-size: 38px; line-height: 1; cursor: pointer; transform: translateY(-50%); transition: background 120ms ease, transform 120ms ease; }
-.gallery-arrow.previous { left: 14px; }
-.gallery-arrow.next { right: 14px; }
-.gallery-arrow:hover:not(:disabled) { background: var(--green-dark); transform: translateY(-50%) scale(1.06); }
+.gallery-arrow { position: absolute; bottom: 10px; z-index: 2; display: grid; width: 38px; height: 38px; border: 2px solid #fff; border-radius: 50%; place-items: center; color: #fff; background: var(--green); box-shadow: 0 3px 10px rgba(11, 53, 35, .2); font-size: 28px; line-height: 1; cursor: pointer; transition: background 120ms ease, transform 120ms ease; }
+.gallery-arrow.previous { left: calc(50% - 86px); }
+.gallery-arrow.next { right: calc(50% - 86px); }
+.gallery-arrow:hover:not(:disabled) { background: var(--green-dark); transform: scale(1.06); }
 .gallery-arrow:disabled { visibility: hidden; }
-.gallery-counter { position: absolute; right: 10px; bottom: 10px; padding: 5px 8px; border-radius: 999px; color: #fff; background: rgba(11, 53, 35, .78); font-size: 11px; font-weight: 800; }
+.gallery-counter { position: absolute; bottom: 18px; left: 50%; min-width: 62px; color: var(--green-dark); font-size: 11px; font-weight: 800; text-align: center; transform: translateX(-50%); }
 .preview-content h2 { margin: 0; font: 800 24px/1.25 "Manrope", sans-serif; }
 #preview-meta { color: var(--muted); }
 .brickset-link { display: inline-block; margin-top: 8px; color: var(--green); font-size: 13px; font-weight: 800; text-decoration: none; }
