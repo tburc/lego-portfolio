@@ -37,6 +37,7 @@ Deno.serve(async (request) => {
       const retailPrice = Number(us.retailPrice ?? set.retailPrice?.US ?? set.USRetailPrice);
       return {
         set_num: `${set.number}-${set.numberVariant || 1}`,
+        brickset_set_id: set.setID || null,
         retail_price: Number.isFinite(retailPrice) && retailPrice > 0 ? retailPrice : null,
         retail_currency: "USD",
       };

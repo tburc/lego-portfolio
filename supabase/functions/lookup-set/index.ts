@@ -125,6 +125,7 @@ Deno.serve(async (request) => {
                 item.retail_price_source = "Brickset";
               }
               if (bricksetSet.bricksetURL) item.brickset_url = bricksetSet.bricksetURL;
+              if (bricksetSet.setID) item.brickset_set_id = bricksetSet.setID;
             }
           }
         }

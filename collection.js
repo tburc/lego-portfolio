@@ -24,7 +24,47 @@ const editPurchasePrice = document.querySelector("#edit-purchase-price");
 const editCurrentValue = document.querySelector("#edit-current-value");
 const editResult = document.querySelector("#edit-result");
 const saveEditButton = document.querySelector("#save-edit");
+const imageDialog = document.querySelector("#image-dialog");
+const galleryImage = document.querySelector("#gallery-image");
+const imagePrevious = document.querySelector("#image-previous");
+const imageNext = document.querySelector("#image-next");
+const imageCounter = document.querySelector("#image-counter");
 const price = (value) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(value) || 0);
+let galleryImages = [];
+let galleryIndex = 0;
+let galleryRequest = 0;
+
+function renderGalleryImage() {
+  galleryImage.src = galleryImages[galleryIndex] || "";
+  imageCounter.textContent = `${galleryIndex + 1} / ${galleryImages.length || 1}`;
+  imagePrevious.disabled = galleryImages.length < 2;
+  imageNext.disabled = galleryImages.length < 2;
+}
+
+function moveGallery(direction) {
+  if (galleryImages.length < 2) return;
+  galleryIndex = (galleryIndex + direction + galleryImages.length) % galleryImages.length;
+  renderGalleryImage();
+}
+
+async function openGallery(details) {
+  const request = ++galleryRequest;
+  galleryImages = [details.image].filter(Boolean);
+  galleryIndex = 0;
+  galleryImage.alt = `${details.name} LEGO set`;
+  renderGalleryImage();
+  imageDialog.showModal();
+  if (!details.bricksetSetId) return;
+  try {
+    const { data, error } = await window.supabaseClient.functions.invoke("set-images", {
+      body: { setId: details.bricksetSetId },
+    });
+    if (request !== galleryRequest || error || data?.error) return;
+    galleryImages = [...new Set([...galleryImages, ...(data.images || [])])];
+    galleryIndex = 0;
+    renderGalleryImage();
+  } catch {}
+}
 
 const levels = [
   { at: 0, name: "Brick Starter" },
@@ -329,6 +369,7 @@ const itemDetails = (item) => {
     year: item.year || "",
     pieces: item.num_parts || item.pieces || "",
     retailPrice: Number(item.retail_price ?? item.retailPrice) || null,
+    bricksetSetId: item.brickset_set_id || item.bricksetSetId || null,
   };
 };
 
@@ -342,6 +383,7 @@ function showSearchItems(items) {
     const image = document.createElement("img");
     image.alt = "";
     if (details.image) image.src = details.image;
+    image.addEventListener("click", () => openGallery(details));
     const text = document.createElement("span");
     const name = document.createElement("strong");
     name.textContent = details.name;
@@ -372,6 +414,14 @@ function showSearchItems(items) {
   });
   lookupResults.hidden = false;
 }
+
+document.querySelector("#image-close").addEventListener("click", () => imageDialog.close());
+imagePrevious.addEventListener("click", () => moveGallery(-1));
+imageNext.addEventListener("click", () => moveGallery(1));
+imageDialog.addEventListener("keydown", (event) => {
+  if (event.key === "ArrowLeft") moveGallery(-1);
+  if (event.key === "ArrowRight") moveGallery(1);
+});
 
 lookupButton.addEventListener("click", async () => {
   const query = searchInput.value.trim();

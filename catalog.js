@@ -27,6 +27,9 @@ const previewImage = document.querySelector("#preview-image");
 const previewName = document.querySelector("#preview-name");
 const previewMeta = document.querySelector("#preview-meta");
 const previewBricksetLink = document.querySelector("#preview-brickset-link");
+const previewPrevious = document.querySelector("#preview-previous");
+const previewNext = document.querySelector("#preview-next");
+const previewCounter = document.querySelector("#preview-counter");
 
 let currentPage = 1;
 let totalProducts = 0;
@@ -37,15 +40,42 @@ let toastTimer;
 let loadSequence = 0;
 let allThemesPromise;
 const retailPrices = new Map();
+const bricksetSetIds = new Map();
 let retailPriceRequest = Promise.resolve();
+let previewImages = [];
+let previewImageIndex = 0;
 
-function showPreview(product) {
-  previewImage.src = product.image_url || "";
+function renderPreviewImage() {
+  previewImage.src = previewImages[previewImageIndex] || "";
+  previewCounter.textContent = `${previewImageIndex + 1} / ${previewImages.length || 1}`;
+  previewPrevious.disabled = previewImages.length < 2;
+  previewNext.disabled = previewImages.length < 2;
+}
+
+function movePreview(direction) {
+  if (previewImages.length < 2) return;
+  previewImageIndex = (previewImageIndex + direction + previewImages.length) % previewImages.length;
+  renderPreviewImage();
+}
+
+async function showPreview(product) {
+  previewImages = [product.image_url].filter(Boolean);
+  previewImageIndex = 0;
+  renderPreviewImage();
   previewImage.alt = `${product.name} LEGO set`;
   previewName.textContent = product.name;
   previewMeta.textContent = `Set ${product.set_num} · ${product.year} · ${Number(product.num_parts).toLocaleString()} pieces`;
   previewBricksetLink.href = `https://brickset.com/sets/${encodeURIComponent(product.set_num)}`;
   previewDialog.showModal();
+  const setId = bricksetSetIds.get(product.set_num);
+  if (!setId) return;
+  try {
+    const { data, error } = await window.supabaseClient.functions.invoke("set-images", { body: { setId } });
+    if (error || data?.error) return;
+    previewImages = [...new Set([...previewImages, ...(data.images || [])])];
+    previewImageIndex = 0;
+    renderPreviewImage();
+  } catch {}
 }
 
 const compactSearch = (value) => value.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -110,7 +140,10 @@ async function loadRetailPrices(products) {
   try {
     const { data, error } = await window.supabaseClient.functions.invoke("brickset-prices", { body: { setNumbers } });
     if (error || data?.error) throw new Error(data?.error || error.message);
-    (data.results || []).forEach((item) => retailPrices.set(item.set_num, Number(item.retail_price) || null));
+    (data.results || []).forEach((item) => {
+      retailPrices.set(item.set_num, Number(item.retail_price) || null);
+      if (item.brickset_set_id) bricksetSetIds.set(item.set_num, item.brickset_set_id);
+    });
   } catch {
     setNumbers.forEach((setNumber) => retailPrices.set(setNumber, null));
   }
@@ -235,6 +268,7 @@ async function loadProducts() {
       .map((item) => {
         const retailPrice = Number(item.retail_price) || null;
         retailPrices.set(item.set_num, retailPrice);
+        if (item.brickset_set_id) bricksetSetIds.set(item.set_num, item.brickset_set_id);
         return {
           set_num: item.set_num,
           name: item.name,
@@ -377,6 +411,12 @@ nextPage.addEventListener("click", () => {
 document.querySelector("#close-add").addEventListener("click", () => addDialog.close());
 document.querySelector("#cancel-add").addEventListener("click", () => addDialog.close());
 document.querySelector("#close-preview").addEventListener("click", () => previewDialog.close());
+previewPrevious.addEventListener("click", () => movePreview(-1));
+previewNext.addEventListener("click", () => movePreview(1));
+previewDialog.addEventListener("keydown", (event) => {
+  if (event.key === "ArrowLeft") movePreview(-1);
+  if (event.key === "ArrowRight") movePreview(1);
+});
 addForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!currentUser || !selectedProduct) return;
