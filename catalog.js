@@ -44,6 +44,7 @@ const bricksetSetIds = new Map();
 let retailPriceRequest = Promise.resolve();
 let previewImages = [];
 let previewImageIndex = 0;
+let previewRequest = 0;
 
 function renderPreviewImage() {
   previewImage.src = previewImages[previewImageIndex] || "";
@@ -59,23 +60,35 @@ function movePreview(direction) {
 }
 
 async function showPreview(product) {
+  const request = ++previewRequest;
   previewImages = [product.image_url].filter(Boolean);
   previewImageIndex = 0;
   renderPreviewImage();
+  previewCounter.textContent = "Loading photos…";
   previewImage.alt = `${product.name} LEGO set`;
   previewName.textContent = product.name;
   previewMeta.textContent = `Set ${product.set_num} · ${product.year} · ${Number(product.num_parts).toLocaleString()} pieces`;
   previewBricksetLink.href = `https://brickset.com/sets/${encodeURIComponent(product.set_num)}`;
   previewDialog.showModal();
   const setId = bricksetSetIds.get(product.set_num);
-  if (!setId) return;
+  if (!setId) return renderPreviewImage();
   try {
     const { data, error } = await window.supabaseClient.functions.invoke("set-images", { body: { setId } });
-    if (error || data?.error) return;
-    previewImages = [...new Set([...previewImages, ...(data.images || [])])];
+    if (request !== previewRequest || error || data?.error) return renderPreviewImage();
+    const nextImages = [...new Set([...previewImages, ...(data.images || [])])];
+    await Promise.all(nextImages.slice(1).map((src) => new Promise((resolve) => {
+      const image = new Image();
+      image.onload = resolve;
+      image.onerror = resolve;
+      image.src = src;
+    })));
+    if (request !== previewRequest) return;
+    previewImages = nextImages;
     previewImageIndex = 0;
     renderPreviewImage();
-  } catch {}
+  } catch {
+    if (request === previewRequest) renderPreviewImage();
+  }
 }
 
 const compactSearch = (value) => value.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -413,6 +426,7 @@ document.querySelector("#cancel-add").addEventListener("click", () => addDialog.
 document.querySelector("#close-preview").addEventListener("click", () => previewDialog.close());
 previewPrevious.addEventListener("click", () => movePreview(-1));
 previewNext.addEventListener("click", () => movePreview(1));
+previewImage.addEventListener("click", () => movePreview(1));
 previewDialog.addEventListener("keydown", (event) => {
   if (event.key === "ArrowLeft") movePreview(-1);
   if (event.key === "ArrowRight") movePreview(1);

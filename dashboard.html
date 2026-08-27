@@ -74,10 +74,11 @@
       .image-dialog { width: min(92vw, 720px); }
       .image-dialog-content { position: relative; display: grid; min-height: 460px; padding: 22px; place-items: center; overflow: hidden; border-radius: 10px; background: #f4f7f4; }
       .image-dialog-content img { display: block; width: 100%; height: 430px; object-fit: contain; }
-      .image-dialog .gallery-arrow { position: absolute; top: 50%; z-index: 2; display: grid; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 50%; place-items: center; color: #fff; background: #0b3523cc; font-size: 29px; cursor: pointer; transform: translateY(-50%); }
-      .image-dialog .gallery-arrow.previous { left: 12px; }
-      .image-dialog .gallery-arrow.next { right: 12px; }
-      .image-dialog .gallery-arrow:disabled { display: none; }
+      .image-dialog .gallery-arrow { position: absolute; top: 0; z-index: 2; display: grid; width: 64px; height: 100%; padding: 0; border: 0; border-radius: 0; place-items: center; color: #fff; background: transparent; font-size: 42px; cursor: pointer; text-shadow: 0 2px 8px #0b3523; transition: background .12s ease, opacity .12s ease; }
+      .image-dialog .gallery-arrow.previous { left: 0; background: linear-gradient(90deg, #0b352377, transparent); }
+      .image-dialog .gallery-arrow.next { right: 0; background: linear-gradient(270deg, #0b352377, transparent); }
+      .image-dialog .gallery-arrow:hover:not(:disabled) { background-color: #0b35233d; }
+      .image-dialog .gallery-arrow:disabled { opacity: .22; cursor: wait; }
       .image-counter { position: absolute; right: 12px; bottom: 12px; padding: 5px 8px; border-radius: 999px; color: #fff; background: #0b3523cc; font-size: 11px; font-weight: 800; }
       .image-close { position: absolute; top: 10px; right: 12px; z-index: 3; padding: 5px 9px; border: 0; border-radius: 50%; color: #fff; background: #0b3523cc; font-size: 20px; cursor: pointer; }
       #mix-donut { position: relative; border: 0; }

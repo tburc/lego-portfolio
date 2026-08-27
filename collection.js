@@ -53,17 +53,29 @@ async function openGallery(details) {
   galleryIndex = 0;
   galleryImage.alt = `${details.name} LEGO set`;
   renderGalleryImage();
+  imageCounter.textContent = details.bricksetSetId ? "Loading photos…" : "1 / 1";
   imageDialog.showModal();
   if (!details.bricksetSetId) return;
   try {
     const { data, error } = await window.supabaseClient.functions.invoke("set-images", {
       body: { setId: details.bricksetSetId },
     });
-    if (request !== galleryRequest || error || data?.error) return;
-    galleryImages = [...new Set([...galleryImages, ...(data.images || [])])];
+    if (request !== galleryRequest) return;
+    if (error || data?.error) return renderGalleryImage();
+    const nextImages = [...new Set([...galleryImages, ...(data.images || [])])];
+    await Promise.all(nextImages.slice(1).map((src) => new Promise((resolve) => {
+      const image = new Image();
+      image.onload = resolve;
+      image.onerror = resolve;
+      image.src = src;
+    })));
+    if (request !== galleryRequest) return;
+    galleryImages = nextImages;
     galleryIndex = 0;
     renderGalleryImage();
-  } catch {}
+  } catch {
+    if (request === galleryRequest) renderGalleryImage();
+  }
 }
 
 const levels = [
@@ -383,7 +395,6 @@ function showSearchItems(items) {
     const image = document.createElement("img");
     image.alt = "";
     if (details.image) image.src = details.image;
-    image.addEventListener("click", () => openGallery(details));
     const text = document.createElement("span");
     const name = document.createElement("strong");
     name.textContent = details.name;
@@ -393,7 +404,7 @@ function showSearchItems(items) {
       : `Set ${details.number}${details.year ? ` · ${details.year}` : ""}${details.retailPrice ? ` · Retail ${price(details.retailPrice)}` : ""}`;
     text.append(name, meta);
     button.append(image, text);
-    button.addEventListener("click", () => {
+    const selectResult = () => {
       lookupResults.querySelectorAll("button").forEach((result) => result.classList.remove("selected"));
       button.classList.add("selected");
       nameInput.value = details.name;
@@ -409,7 +420,13 @@ function showSearchItems(items) {
         : `Selected: ${details.name}. Enter what you paid and its current value.`;
       saveButton.disabled = false;
       valueInput.focus();
+    };
+    image.addEventListener("click", (event) => {
+      event.stopPropagation();
+      selectResult();
+      openGallery(details);
     });
+    button.addEventListener("click", selectResult);
     lookupResults.append(button);
   });
   lookupResults.hidden = false;
@@ -418,6 +435,7 @@ function showSearchItems(items) {
 document.querySelector("#image-close").addEventListener("click", () => imageDialog.close());
 imagePrevious.addEventListener("click", () => moveGallery(-1));
 imageNext.addEventListener("click", () => moveGallery(1));
+galleryImage.addEventListener("click", () => moveGallery(1));
 imageDialog.addEventListener("keydown", (event) => {
   if (event.key === "ArrowLeft") moveGallery(-1);
   if (event.key === "ArrowRight") moveGallery(1);
