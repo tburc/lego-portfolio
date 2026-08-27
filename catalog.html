@@ -115,9 +115,24 @@
             <span>Resale prices</span>
             <strong>Comparison coming soon</strong>
           </div>
+          <button class="add-to-portfolio" type="button">Add to portfolio</button>
         </div>
       </article>
     </template>
+
+    <dialog id="add-dialog">
+      <form id="add-form">
+        <div class="dialog-heading">
+          <div><p class="eyebrow">ADD TO PORTFOLIO</p><h2 id="add-set-name"></h2></div>
+          <button id="close-add" type="button" aria-label="Close">×</button>
+        </div>
+        <p id="add-price-status">Enter your prices below.</p>
+        <label>What you paid ($)<input id="add-purchase-price" type="number" min="0" step="0.01" required /></label>
+        <label>Current estimated value ($)<input id="add-current-value" type="number" min="0" step="0.01" required /></label>
+        <menu><button id="cancel-add" type="button">Cancel</button><button class="primary-button" id="save-add" type="submit">Add item</button></menu>
+      </form>
+    </dialog>
+    <div class="toast" id="catalog-toast" role="status" aria-live="polite"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>

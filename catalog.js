@@ -14,10 +14,60 @@ const themeFilter = document.querySelector("#theme-filter");
 const yearFilter = document.querySelector("#year-filter");
 const sortFilter = document.querySelector("#sort-filter");
 const clearFiltersButton = document.querySelector("#clear-filters");
+const addDialog = document.querySelector("#add-dialog");
+const addForm = document.querySelector("#add-form");
+const addSetName = document.querySelector("#add-set-name");
+const addPriceStatus = document.querySelector("#add-price-status");
+const addPurchasePrice = document.querySelector("#add-purchase-price");
+const addCurrentValue = document.querySelector("#add-current-value");
+const saveAddButton = document.querySelector("#save-add");
+const catalogToast = document.querySelector("#catalog-toast");
 
 let currentPage = 1;
 let totalProducts = 0;
 let searchTimer;
+let currentUser = null;
+let selectedProduct = null;
+let toastTimer;
+
+function showToast(message) {
+  clearTimeout(toastTimer);
+  catalogToast.textContent = message;
+  catalogToast.classList.add("show");
+  toastTimer = setTimeout(() => catalogToast.classList.remove("show"), 2800);
+}
+
+async function openAddDialog(product) {
+  if (!currentUser) {
+    catalogError.textContent = "Sign in first, then you can add sets directly to your portfolio.";
+    document.querySelector("#account-link").focus();
+    return;
+  }
+  selectedProduct = product;
+  addSetName.textContent = product.name;
+  addPurchasePrice.value = "";
+  addCurrentValue.value = "";
+  addPriceStatus.textContent = "Checking the original U.S. retail price…";
+  addDialog.showModal();
+
+  try {
+    const { data, error } = await window.supabaseClient.functions.invoke("lookup-set", {
+      body: { query: product.set_num, includeMinifigures: false, limit: 5 },
+    });
+    if (error || data?.error) throw new Error(data?.error || error.message);
+    const match = (data?.results || []).find((item) => item.set_num === product.set_num);
+    const retailPrice = Number(match?.retail_price);
+    if (Number.isFinite(retailPrice) && retailPrice > 0) {
+      addPurchasePrice.value = retailPrice.toFixed(2);
+      addCurrentValue.value = retailPrice.toFixed(2);
+      addPriceStatus.textContent = "Original U.S. retail price filled from Brickset. Change it if you paid a different amount.";
+    } else {
+      addPriceStatus.textContent = "No original retail price was found. Enter what you paid and its current value.";
+    }
+  } catch {
+    addPriceStatus.textContent = "Price lookup is unavailable. You can still enter both values manually.";
+  }
+}
 
 function safeSearchTerm(value) {
   return value.trim().slice(0, 80).replace(/[,%()]/g, " ").replace(/\s+/g, " ");
@@ -53,6 +103,7 @@ function renderProducts(products) {
     card.querySelector(".theme-name").textContent = product.theme?.name || "Other";
     card.querySelector(".set-year").textContent = product.year;
     card.querySelector(".piece-count").textContent = Number(product.num_parts).toLocaleString();
+    card.querySelector(".add-to-portfolio").addEventListener("click", () => openAddDialog(product));
     productGrid.append(card);
   });
 }
@@ -191,9 +242,42 @@ nextPage.addEventListener("click", () => {
   loadProducts().then(() => window.scrollTo({ top: 390, behavior: "smooth" }));
 });
 
+document.querySelector("#close-add").addEventListener("click", () => addDialog.close());
+document.querySelector("#cancel-add").addEventListener("click", () => addDialog.close());
+addForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!currentUser || !selectedProduct) return;
+  const purchasePrice = Number(addPurchasePrice.value);
+  const estimatedValue = Number(addCurrentValue.value);
+  if (![purchasePrice, estimatedValue].every((value) => Number.isFinite(value) && value >= 0)) return;
+
+  saveAddButton.disabled = true;
+  saveAddButton.textContent = "Adding…";
+  const { error } = await window.supabaseClient.from("collection_items").insert({
+    user_id: currentUser.id,
+    item_number: selectedProduct.set_num,
+    name: selectedProduct.name,
+    item_type: "set",
+    estimated_value: estimatedValue,
+    purchase_price: purchasePrice,
+    image_url: selectedProduct.image_url || null,
+    year: Number(selectedProduct.year) || null,
+    pieces: Number(selectedProduct.num_parts) || null,
+  });
+  saveAddButton.disabled = false;
+  saveAddButton.textContent = "Add item";
+  if (error) {
+    addPriceStatus.textContent = `Could not add this set: ${error.message}`;
+    return;
+  }
+  addDialog.close();
+  showToast(`${selectedProduct.name} was added to your portfolio.`);
+});
+
 async function initialize() {
   const { data: { session } } = await window.supabaseClient.auth.getSession();
   if (session) {
+    currentUser = session.user;
     const accountLink = document.querySelector("#account-link");
     accountLink.href = "dashboard.html";
     accountLink.textContent = "My portfolio";
