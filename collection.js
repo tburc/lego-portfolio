@@ -328,6 +328,7 @@ const itemDetails = (item) => {
     image: item.set_img_url || item.img_big || item.img_sm || item.img_tn || item.image_url || item.image || "",
     year: item.year || "",
     pieces: item.num_parts || item.pieces || "",
+    retailPrice: Number(item.retail_price ?? item.retailPrice) || null,
   };
 };
 
@@ -345,7 +346,9 @@ function showSearchItems(items) {
     const name = document.createElement("strong");
     name.textContent = details.name;
     const meta = document.createElement("small");
-    meta.textContent = details.type === "minifigure" ? `Minifigure · ${details.number}` : `Set ${details.number}${details.year ? ` · ${details.year}` : ""}`;
+    meta.textContent = details.type === "minifigure"
+      ? `Minifigure · ${details.number}`
+      : `Set ${details.number}${details.year ? ` · ${details.year}` : ""}${details.retailPrice ? ` · Retail ${price(details.retailPrice)}` : ""}`;
     text.append(name, meta);
     button.append(image, text);
     button.addEventListener("click", () => {
@@ -357,7 +360,11 @@ function showSearchItems(items) {
       searchInput.dataset.imageUrl = details.image;
       searchInput.dataset.year = details.year;
       searchInput.dataset.pieces = details.pieces;
-      lookupResult.textContent = `Selected: ${details.name}`;
+      purchaseInput.value = details.retailPrice ? details.retailPrice.toFixed(2) : "";
+      valueInput.value = details.retailPrice ? details.retailPrice.toFixed(2) : "";
+      lookupResult.textContent = details.retailPrice
+        ? `Selected: ${details.name}. Original U.S. retail price filled from Brickset.`
+        : `Selected: ${details.name}. Enter what you paid and its current value.`;
       saveButton.disabled = false;
       valueInput.focus();
     });

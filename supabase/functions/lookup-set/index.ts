@@ -78,9 +78,62 @@ Deno.serve(async (request) => {
         return 3 + typoPenalty;
       };
       return score(left) - score(right);
-    });
+    }).slice(0, pageSize);
 
-    return Response.json({ results: results.slice(0, pageSize) }, { headers: corsHeaders });
+    // Enrich all visible sets with original U.S. retail prices in one Brickset call.
+    const bricksetApiKey = Deno.env.get("BRICKSET_API_KEY");
+    const setNumbers = results
+      .filter((item) => item.type === "set" && item.set_num)
+      .map((item) => String(item.set_num));
+    if (bricksetApiKey && setNumbers.length) {
+      try {
+        const body = new URLSearchParams({
+          apiKey: bricksetApiKey,
+          userHash: "",
+          params: JSON.stringify({ setNumber: setNumbers.join(","), pageSize: setNumbers.length }),
+        });
+        const bricksetResponse = await fetch("https://brickset.com/api/v3.asmx/getSets", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body,
+        });
+        if (bricksetResponse.ok) {
+          const bricksetPayload = await bricksetResponse.json();
+          if (bricksetPayload?.status === "success") {
+            const bricksetSets = new Map<string, Record<string, unknown>>();
+            for (const set of bricksetPayload.sets || []) {
+              const number = String(set.number || "");
+              const variant = String(set.numberVariant || "1");
+              bricksetSets.set(`${number}-${variant}`, set);
+              if (!bricksetSets.has(number)) bricksetSets.set(number, set);
+            }
+            for (const item of results) {
+              if (item.type !== "set") continue;
+              const itemNumber = String(item.set_num || "");
+              const bricksetSet = bricksetSets.get(itemNumber) || bricksetSets.get(itemNumber.split("-")[0]);
+              if (!bricksetSet) continue;
+              const legoCom = bricksetSet.LEGOCom as Record<string, unknown> | undefined;
+              const us = (bricksetSet.US || legoCom?.US) as Record<string, unknown> | undefined;
+              const retailPrice = Number(
+                us?.retailPrice ??
+                (bricksetSet.retailPrice as Record<string, unknown> | undefined)?.US ??
+                bricksetSet.USRetailPrice,
+              );
+              if (Number.isFinite(retailPrice) && retailPrice > 0) {
+                item.retail_price = retailPrice;
+                item.retail_currency = "USD";
+                item.retail_price_source = "Brickset";
+              }
+              if (bricksetSet.bricksetURL) item.brickset_url = bricksetSet.bricksetURL;
+            }
+          }
+        }
+      } catch {
+        // Search still works when Brickset is temporarily unavailable.
+      }
+    }
+
+    return Response.json({ results }, { headers: corsHeaders });
   } catch (error) {
     return Response.json(
       { error: error instanceof Error ? error.message : "Search failed." },
