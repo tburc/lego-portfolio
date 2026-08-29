@@ -29,6 +29,19 @@ const galleryImage = document.querySelector("#gallery-image");
 const imagePrevious = document.querySelector("#image-previous");
 const imageNext = document.querySelector("#image-next");
 const imageCounter = document.querySelector("#image-counter");
+const brickOwlDialog = document.querySelector("#brickowl-dialog");
+const brickOwlForm = document.querySelector("#brickowl-form");
+const brickOwlApiKey = document.querySelector("#brickowl-api-key");
+const brickOwlCurrency = document.querySelector("#brickowl-currency");
+const brickOwlSharePublic = document.querySelector("#brickowl-share-public");
+const brickOwlResult = document.querySelector("#brickowl-result");
+const brickOwlStatus = document.querySelector("#brickowl-status");
+const brickOwlSummary = document.querySelector("#brickowl-summary");
+const connectBrickOwlButton = document.querySelector("#connect-brickowl");
+const syncBrickOwlButton = document.querySelector("#sync-brickowl");
+const disconnectBrickOwlButton = document.querySelector("#disconnect-brickowl");
+const sellerListings = document.querySelector("#seller-listings");
+const sellerListingSummary = document.querySelector("#seller-listing-summary");
 const price = (value) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(value) || 0);
 let galleryImages = [];
 let galleryIndex = 0;
@@ -111,6 +124,187 @@ function showToast(message) {
   toastTimer = setTimeout(() => toast.classList.remove("show"), 2800);
 }
 
+function marketplacePrice(value, currency) {
+  if (value === null || value === undefined) return "Price unavailable";
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency: currency || "USD",
+      maximumFractionDigits: 2,
+    }).format(Number(value));
+  } catch {
+    return `${currency || ""} ${Number(value).toFixed(2)}`.trim();
+  }
+}
+
+function brickOwlError(error, data) {
+  return data?.error || error?.context?.error || error?.message || "Brick Owl request failed.";
+}
+
+function setBrickOwlBusy(isBusy, label = "Working…") {
+  [connectBrickOwlButton, syncBrickOwlButton, disconnectBrickOwlButton].forEach((button) => {
+    button.disabled = isBusy;
+  });
+  if (isBusy) brickOwlStatus.textContent = label;
+}
+
+function renderBrickOwlAccount(account) {
+  const connected = Boolean(account);
+  connectBrickOwlButton.hidden = connected;
+  syncBrickOwlButton.hidden = !connected;
+  disconnectBrickOwlButton.hidden = !connected;
+  brickOwlStatus.className = `connection-status${connected ? account.status === "error" ? " error" : " connected" : ""}`;
+
+  if (!connected) {
+    brickOwlStatus.textContent = "Not connected";
+    brickOwlSummary.textContent = "Connect a seller account with a read-only API key.";
+    return;
+  }
+
+  const identity = account.external_store_name || account.external_username || "Brick Owl seller";
+  brickOwlStatus.textContent = account.status === "error" ? `${identity} · sync needs attention` : `${identity} · connected`;
+  const synced = account.last_synced_at ? new Date(account.last_synced_at).toLocaleString() : "not synced yet";
+  brickOwlSummary.textContent = `${account.inventory_count || 0} active store listings · ${account.matched_set_count || 0} catalog sets matched · last sync ${synced}`;
+  brickOwlSharePublic.checked = account.share_listings_publicly !== false;
+  brickOwlCurrency.value = account.currency_code || "USD";
+}
+
+function renderSellerListings(rows) {
+  sellerListings.replaceChildren();
+  sellerListingSummary.textContent = rows.length
+    ? `${rows.length} active listing${rows.length === 1 ? "" : "s"} shown from your linked stores.`
+    : "No active seller listings imported yet.";
+
+  if (!rows.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty-collection";
+    empty.innerHTML = "<strong>No seller listings yet</strong><span>Connect or sync a marketplace seller account to import its inventory.</span>";
+    sellerListings.append(empty);
+    return;
+  }
+
+  rows.forEach((listing) => {
+    const article = document.createElement("article");
+    article.className = "seller-listing";
+    const visual = listing.image_url ? document.createElement("img") : document.createElement("span");
+    if (listing.image_url) {
+      visual.src = listing.image_url;
+      visual.alt = "";
+    } else {
+      visual.className = "listing-placeholder";
+      visual.textContent = "BO";
+    }
+    const details = document.createElement("div");
+    const name = document.createElement(listing.listing_url ? "a" : "strong");
+    name.textContent = listing.title;
+    if (listing.listing_url) {
+      name.href = listing.listing_url;
+      name.target = "_blank";
+      name.rel = "noopener noreferrer";
+    }
+    const meta = document.createElement("small");
+    meta.textContent = `${listing.marketplace === "brickowl" ? "Brick Owl" : listing.marketplace} · ${listing.item_condition} · quantity ${listing.quantity}${listing.set_num ? ` · Set ${listing.set_num}` : " · not matched to a catalog set"}`;
+    details.append(name, meta);
+    const amount = document.createElement("strong");
+    amount.className = "seller-listing-price";
+    amount.textContent = marketplacePrice(listing.unit_price, listing.currency_code);
+    article.append(visual, details, amount);
+    sellerListings.append(article);
+  });
+}
+
+async function loadSellerListings() {
+  const { data, error } = await window.supabaseClient
+    .from("seller_listings")
+    .select("marketplace,external_listing_id,set_num,title,item_type,item_condition,quantity,unit_price,currency_code,listing_url,image_url,last_seen_at")
+    .eq("is_active", true)
+    .order("last_seen_at", { ascending: false })
+    .limit(100);
+
+  if (error) {
+    sellerListingSummary.textContent = "Seller portfolio is unavailable until its database migration is installed.";
+    return;
+  }
+  renderSellerListings(data || []);
+}
+
+async function loadBrickOwlAccount() {
+  const { data, error } = await window.supabaseClient.functions.invoke("connect-brickowl", {
+    body: { action: "status" },
+  });
+  if (error || data?.error) {
+    brickOwlStatus.className = "connection-status error";
+    brickOwlStatus.textContent = "Integration not deployed";
+    brickOwlSummary.textContent = brickOwlError(error, data);
+  } else {
+    renderBrickOwlAccount(data.account);
+  }
+  await loadSellerListings();
+}
+
+connectBrickOwlButton.addEventListener("click", () => {
+  brickOwlForm.reset();
+  brickOwlSharePublic.checked = true;
+  brickOwlCurrency.value = "USD";
+  brickOwlResult.textContent = "";
+  brickOwlDialog.showModal();
+  setTimeout(() => brickOwlApiKey.focus(), 50);
+});
+
+document.querySelector("#cancel-brickowl").addEventListener("click", () => brickOwlDialog.close("cancel"));
+
+brickOwlForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const apiKey = brickOwlApiKey.value.trim();
+  if (!apiKey) return;
+  const submitButton = document.querySelector("#save-brickowl");
+  submitButton.disabled = true;
+  submitButton.textContent = "Connecting…";
+  brickOwlResult.textContent = "Validating the key and importing active listings…";
+  const { data, error } = await window.supabaseClient.functions.invoke("connect-brickowl", {
+    body: { action: "connect", apiKey, currency: brickOwlCurrency.value, sharePublic: brickOwlSharePublic.checked },
+  });
+  brickOwlApiKey.value = "";
+  if (error || data?.error) {
+    brickOwlResult.textContent = brickOwlError(error, data);
+    submitButton.disabled = false;
+    submitButton.textContent = "Connect and sync";
+    return;
+  }
+  brickOwlDialog.close();
+  submitButton.disabled = false;
+  submitButton.textContent = "Connect and sync";
+  showToast(`Brick Owl connected. ${data.account?.inventoryCount || 0} listings imported.`);
+  await loadBrickOwlAccount();
+});
+
+syncBrickOwlButton.addEventListener("click", async () => {
+  setBrickOwlBusy(true, "Syncing Brick Owl inventory…");
+  const { data, error } = await window.supabaseClient.functions.invoke("connect-brickowl", {
+    body: { action: "sync" },
+  });
+  setBrickOwlBusy(false);
+  if (error || data?.error) {
+    showToast(brickOwlError(error, data));
+  } else {
+    showToast(`Synced ${data.inventoryCount || 0} Brick Owl listings.`);
+  }
+  await loadBrickOwlAccount();
+});
+
+disconnectBrickOwlButton.addEventListener("click", async () => {
+  if (!window.confirm("Disconnect Brick Owl and remove its imported seller listings from legofolio?")) return;
+  setBrickOwlBusy(true, "Disconnecting…");
+  const { data, error } = await window.supabaseClient.functions.invoke("connect-brickowl", {
+    body: { action: "disconnect" },
+  });
+  setBrickOwlBusy(false);
+  if (error || data?.error) return showToast(brickOwlError(error, data));
+  renderBrickOwlAccount(null);
+  renderSellerListings([]);
+  showToast("Brick Owl disconnected and its imported listings were removed.");
+});
+
 function resetDialog() {
   form.reset();
   lookupResults.replaceChildren();
@@ -163,14 +357,14 @@ function updateProgress() {
   document.querySelector("#item-count").textContent = total;
   document.querySelector("#best-value").textContent = best ? price(best.estimated_value) : "$0.00";
   document.querySelector("#best-item").textContent = best?.name || "No items yet";
-  document.querySelector("#set-detail").textContent = sets === 1 ? "1 set in your vault" : `${sets} sets in your vault`;
-  document.querySelector("#minifigure-detail").textContent = minifigures === 1 ? "1 figure collected" : `${minifigures} figures collected`;
-  document.querySelector("#item-detail").textContent = total ? "Keep building your story" : "Your collection is ready";
-  document.querySelector("#collection-message").textContent = total ? `${total} item${total === 1 ? "" : "s"} catalogued and counting.` : "Add your first item to begin.";
+  document.querySelector("#set-detail").textContent = sets === 1 ? "1 set recorded" : `${sets} sets recorded`;
+  document.querySelector("#minifigure-detail").textContent = minifigures === 1 ? "1 figure recorded" : `${minifigures} figures recorded`;
+  document.querySelector("#item-detail").textContent = total ? "Existing portfolio records" : "Manual additions disabled";
+  document.querySelector("#collection-message").textContent = total ? `${total} existing item${total === 1 ? "" : "s"} in this portfolio.` : "Manual portfolio additions are currently unavailable.";
   document.querySelector("#collector-level").textContent = `Level ${levelIndex + 1} · ${level.name}`;
   document.querySelector("#level-count").textContent = next ? `${total} / ${next.at}` : `${total} items`;
   document.querySelector("#level-progress").style.width = `${Math.min(progress, 100)}%`;
-  document.querySelector("#next-milestone").textContent = next ? `${next.at - total} item${next.at - total === 1 ? "" : "s"} until ${next.name}` : "Highest collector level reached";
+  document.querySelector("#next-milestone").textContent = total && next ? `${next.at - total} item${next.at - total === 1 ? "" : "s"} until ${next.name}` : total ? "Highest collector level reached" : "Verified portfolio tracking is coming later";
 
   const setPercent = total ? Math.round((sets / total) * 100) : 0;
   const minifigurePercent = total ? 100 - setPercent : 0;
@@ -322,7 +516,7 @@ function renderCollection() {
   if (!collection.length) {
     const empty = document.createElement("div");
     empty.className = "empty-collection";
-    empty.innerHTML = "<strong>Your collection starts here</strong><span>Search for a set or minifigure and add your first item.</span>";
+    empty.innerHTML = "<strong>No verified collection items yet</strong><span>Manual additions are disabled while ownership verification is being designed.</span>";
     holdingsList.append(empty);
   } else {
     collection.forEach((item) => {
@@ -605,7 +799,7 @@ async function initialize() {
   const { data: isAdmin } = await window.supabaseClient.rpc("is_admin");
   document.querySelector("#admin-nav-link").hidden = !isAdmin;
   renderWatchlist();
-  await loadCollection();
+  await Promise.all([loadCollection(), loadBrickOwlAccount()]);
 }
 
 initialize();

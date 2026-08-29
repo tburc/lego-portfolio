@@ -153,6 +153,46 @@ document.querySelector("#admin-product-search").addEventListener("input", () => 
   adminSearchTimer = setTimeout(loadAdminProducts, 300);
 });
 
+let ebaySyncOffset = 0;
+document.querySelector("#sync-ebay-products").addEventListener("click", async () => {
+  const button = document.querySelector("#sync-ebay-products");
+  const status = document.querySelector("#ebay-sync-status");
+  const search = safeSearchTerm(document.querySelector("#admin-product-search").value);
+  const visibleSetNumbers = [...document.querySelectorAll(".admin-product-row")]
+    .map((row) => row.dataset.setNumber)
+    .filter(Boolean)
+    .slice(0, 10);
+  const body = search
+    ? { setNumbers: visibleSetNumbers }
+    : { limit: 10, offset: ebaySyncOffset };
+
+  if (search && !visibleSetNumbers.length) {
+    status.textContent = "No displayed catalog products are available to sync.";
+    return;
+  }
+
+  button.disabled = true;
+  button.textContent = "Syncing eBay…";
+  status.textContent = "Requesting current fixed-price listings and verifying set-number matches…";
+
+  try {
+    const { data, error } = await window.supabaseClient.functions.invoke("sync-ebay", { body });
+    if (error || data?.error) throw new Error(data?.error || error.message);
+    const results = data.results || [];
+    const successful = results.filter((result) => !result.error);
+    const failed = results.length - successful.length;
+    const listingCount = successful.reduce((total, result) => total + Number(result.matched_listings || 0), 0);
+    if (!search && results.length) ebaySyncOffset += results.length;
+    if (!search && results.length < 10) ebaySyncOffset = 0;
+    status.textContent = `${data.environment === "production" ? "Live" : "Sandbox"} sync finished: ${listingCount} verified listings across ${successful.length} sets${failed ? `; ${failed} sets failed` : ""}.`;
+  } catch (error) {
+    status.textContent = `eBay sync could not run: ${error.message}`;
+  } finally {
+    button.disabled = false;
+    button.textContent = "Sync next 10 from eBay";
+  }
+});
+
 async function signOutToLogin() {
   await window.supabaseClient.auth.signOut();
   loginForm.reset();

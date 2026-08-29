@@ -248,6 +248,30 @@ dd { overflow: hidden; margin: 4px 0 0; text-overflow: ellipsis; white-space: no
 .price-status span { color: var(--muted); font-size: 10px; }
 .price-status strong { color: #87681e; font-size: 10px; text-align: right; }
 
+.marketplace-price {
+  display: flex;
+  min-height: 49px;
+  margin-top: 10px;
+  padding: 10px 11px;
+  border: 1px solid #cbdaf1;
+  border-radius: 8px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: #f5f8fd;
+}
+.marketplace-price span,
+.marketplace-price small { display: block; }
+.marketplace-price span { color: #4d5f78; font-size: 10px; }
+.marketplace-price span b { color: #1d57a5; }
+.marketplace-price small { margin-top: 3px; color: var(--muted); font-size: 9px; }
+.brickowl-marketplace-price { border-color: #d8c8ef; background: #faf7fd; }
+.brickowl-marketplace-price span b { color: #713d9b; }
+.ebay-price, .brickowl-price { color: #1d57a5; font-size: 11px; font-weight: 800; text-align: right; text-decoration: none; }
+.brickowl-price { color: #713d9b; }
+.ebay-price:hover, .brickowl-price:hover { text-decoration: underline; }
+.ebay-price[aria-disabled="true"], .brickowl-price[aria-disabled="true"] { color: #8391a3; pointer-events: none; }
+
 .add-to-portfolio {
   width: 100%;
   min-height: 42px;

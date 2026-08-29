@@ -41,6 +41,7 @@ let toastTimer;
 let loadSequence = 0;
 let allThemesPromise;
 const retailPrices = new Map();
+const marketplaceListings = new Map();
 const bricksetSetIds = new Map();
 let retailPriceRequest = Promise.resolve();
 let previewImages = [];
@@ -80,7 +81,7 @@ async function showPreview(product) {
   const setId = bricksetSetIds.get(product.set_num);
   if (!setId) return renderPreviewImage();
   try {
-    const { data, error } = await window.supabaseClient.functions.invoke("set-images", { body: { setId } });
+    const { data, error } = await window.supabasePublicClient.functions.invoke("set-images", { body: { setId } });
     if (request !== previewRequest || error || data?.error) return renderPreviewImage();
     const nextImages = [...new Set([...previewImages, ...(data.images || [])])];
     await Promise.all(nextImages.slice(1).map((src) => new Promise((resolve) => {
@@ -109,7 +110,7 @@ async function categoryThemeIds(search) {
   };
   const compact = aliases[compactSearch(search)] || compactSearch(search);
   if (!compact) return [];
-  allThemesPromise ||= window.supabaseClient.from("lego_themes").select("id,name,parent_id").limit(2000);
+  allThemesPromise ||= window.supabasePublicClient.from("lego_themes").select("id,name,parent_id").limit(2000);
   const { data: themes, error } = await allThemesPromise;
   if (error || !themes) return [];
   const roots = themes.filter((theme) => compactSearch(theme.name) === compact).map((theme) => theme.id);
@@ -131,7 +132,7 @@ async function categoryThemeIds(search) {
 async function loadCategory(search, sequence) {
   const themeIds = await categoryThemeIds(search);
   if (!themeIds.length || sequence !== loadSequence) return false;
-  const { data, error, count } = await window.supabaseClient
+  const { data, error, count } = await window.supabasePublicClient
     .from("lego_sets")
     .select(
       "set_num,name,year,num_parts,image_url,source_url,is_featured,display_order,theme:lego_themes(name)",
@@ -147,6 +148,7 @@ async function loadCategory(search, sequence) {
   resultCount.textContent = `Showing ${data.length} of ${totalProducts} sets in this LEGO theme`;
   renderProducts(data);
   retailPriceRequest = loadRetailPrices(data);
+  loadMarketplaceListings(data);
   emptyState.hidden = data.length > 0;
   pagination.hidden = true;
   updateFilterState();
@@ -158,7 +160,7 @@ async function loadRetailPrices(products) {
   const setNumbers = products.map((product) => product.set_num).filter(Boolean);
   if (!setNumbers.length) return;
   try {
-    const { data, error } = await window.supabaseClient.functions.invoke("brickset-prices", { body: { setNumbers } });
+    const { data, error } = await window.supabasePublicClient.functions.invoke("brickset-prices", { body: { setNumbers } });
     if (error || data?.error) throw new Error(data?.error || error.message);
     (data.results || []).forEach((item) => {
       retailPrices.set(item.set_num, Number(item.retail_price) || null);
@@ -171,6 +173,69 @@ async function loadRetailPrices(products) {
     const setNumber = card.dataset.setNumber;
     const value = retailPrices.get(setNumber);
     card.querySelector(".retail-price").textContent = value ? `$${value.toFixed(2)}` : "Not available";
+  });
+}
+
+function formatMarketplacePrice(value, currency) {
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 2,
+    }).format(value);
+  } catch {
+    return `${currency} ${Number(value).toFixed(2)}`;
+  }
+}
+
+async function loadMarketplaceListings(products) {
+  const setNumbers = [...new Set(products.map((product) => product.set_num).filter(Boolean))];
+  if (!setNumbers.length) return;
+  setNumbers.forEach((setNumber) => {
+    marketplaceListings.delete(`${setNumber}:ebay`);
+    marketplaceListings.delete(`${setNumber}:brickowl`);
+  });
+
+  const { data, error } = await window.supabasePublicClient
+    .from("marketplace_listings")
+    .select("marketplace,set_num,item_condition,item_price,shipping_price,total_price,currency_code,listing_url,last_seen_at")
+    .in("marketplace", ["ebay", "brickowl"])
+    .eq("is_active", true)
+    .in("set_num", setNumbers)
+    .limit(1000);
+
+  if (!error) {
+    (data || []).forEach((listing) => {
+      const key = `${listing.set_num}:${listing.marketplace}`;
+      const group = marketplaceListings.get(key) || [];
+      group.push(listing);
+      marketplaceListings.set(key, group);
+    });
+  }
+
+  productGrid.querySelectorAll(".product-card").forEach((card) => {
+    ["ebay", "brickowl"].forEach((marketplace) => {
+      const listings = marketplaceListings.get(`${card.dataset.setNumber}:${marketplace}`) || [];
+      const priceLink = card.querySelector(`.${marketplace}-price`);
+      const count = card.querySelector(`.${marketplace}-listing-count`);
+      if (!listings.length) {
+        priceLink.textContent = error ? "Unavailable" : "No offers";
+        priceLink.removeAttribute("href");
+        priceLink.setAttribute("aria-disabled", "true");
+        count.textContent = error ? "Marketplace data unavailable" : "No matched seller listings yet";
+        return;
+      }
+
+      const ranked = [...listings].sort((left, right) =>
+        Number(left.total_price ?? left.item_price) - Number(right.total_price ?? right.item_price));
+      const best = ranked[0];
+      const listingPrice = Number(best.total_price ?? best.item_price);
+      const condition = best.item_condition === "new" ? "New" : best.item_condition === "used" ? "Used" : "Offer";
+      priceLink.textContent = `${condition} from ${formatMarketplacePrice(listingPrice, best.currency_code)}`;
+      priceLink.href = best.listing_url;
+      priceLink.removeAttribute("aria-disabled");
+      count.textContent = `${listings.length} seller listing${listings.length === 1 ? "" : "s"}${best.total_price === null ? " · shipping extra" : ""}`;
+    });
   });
 }
 
@@ -271,7 +336,7 @@ async function loadProducts() {
       if (sequence !== loadSequence) return;
       catalogError.textContent = `Theme search could not load: ${error.message}`;
     }
-    const { data, error } = await window.supabaseClient.functions.invoke("lookup-set", {
+    const { data, error } = await window.supabasePublicClient.functions.invoke("lookup-set", {
       body: { query: search, includeMinifigures: false, limit: 20 },
     });
     if (sequence !== loadSequence) return;
@@ -303,6 +368,7 @@ async function loadProducts() {
     totalProducts = products.length;
     resultCount.textContent = `${products.length} matching set${products.length === 1 ? "" : "s"} from the wider LEGO catalog`;
     renderProducts(products);
+    loadMarketplaceListings(products);
     productGrid.querySelectorAll(".product-card").forEach((card) => {
       const value = retailPrices.get(card.dataset.setNumber);
       card.querySelector(".retail-price").textContent = value ? `$${value.toFixed(2)}` : "Not available";
@@ -315,7 +381,7 @@ async function loadProducts() {
 
   const from = (currentPage - 1) * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
-  let query = window.supabaseClient
+  let query = window.supabasePublicClient
     .from("lego_sets")
     .select(
       "set_num,name,year,num_parts,image_url,source_url,is_featured,display_order,theme:lego_themes(name)",
@@ -357,13 +423,14 @@ async function loadProducts() {
     : "0 products";
   renderProducts(data);
   retailPriceRequest = loadRetailPrices(data);
+  loadMarketplaceListings(data);
   emptyState.hidden = data.length > 0;
   updateFilterState();
   updatePagination();
 }
 
 async function loadFilterOptions() {
-  const { data: catalogRows, error } = await window.supabaseClient
+  const { data: catalogRows, error } = await window.supabasePublicClient
     .from("lego_sets")
     .select("theme_id,year")
     .limit(1000);
@@ -372,7 +439,7 @@ async function loadFilterOptions() {
 
   const themeIds = [...new Set(catalogRows.map((row) => row.theme_id).filter(Boolean))];
   const years = [...new Set(catalogRows.map((row) => row.year))].sort((left, right) => right - left);
-  const { data: themes } = await window.supabaseClient
+  const { data: themes } = await window.supabasePublicClient
     .from("lego_themes")
     .select("id,name")
     .in("id", themeIds)

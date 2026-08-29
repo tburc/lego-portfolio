@@ -5,3 +5,18 @@ window.supabaseClient = window.supabase.createClient(
   SUPABASE_URL,
   SUPABASE_PUBLISHABLE_KEY,
 );
+
+// Public catalog reads must not inherit a stale signed-in user's JWT. This
+// client deliberately uses only the publishable key and stores no session.
+window.supabasePublicClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_PUBLISHABLE_KEY,
+  {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+      storageKey: "legofolio-public-catalog",
+    },
+  },
+);

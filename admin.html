@@ -113,13 +113,17 @@
               <h2>Featured and visible sets</h2>
               <p>Changes here appear on the public product page immediately.</p>
             </div>
-            <label class="admin-search">
-              <span class="sr-only">Search catalog products</span>
-              <input id="admin-product-search" type="search" placeholder="Search name or set number" />
-            </label>
+            <div class="catalog-admin-actions">
+              <button class="ebay-sync-button" id="sync-ebay-products" type="button">Sync next 10 from eBay</button>
+              <label class="admin-search">
+                <span class="sr-only">Search catalog products</span>
+                <input id="admin-product-search" type="search" placeholder="Search name or set number" />
+              </label>
+            </div>
           </header>
           <div class="admin-product-list" id="admin-product-list" aria-live="polite"></div>
           <p class="admin-list-status" id="admin-list-status"></p>
+          <p class="ebay-sync-status" id="ebay-sync-status" role="status" aria-live="polite">eBay sync requires configured Supabase function secrets.</p>
         </section>
 
         <p class="notice" id="admin-notice" role="status" aria-live="polite"></p>

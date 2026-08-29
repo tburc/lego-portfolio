@@ -35,13 +35,13 @@
         <div>
           <p class="eyebrow">PRODUCT CATALOG</p>
           <h1>Find your next build.</h1>
-          <p>Browse a curated starting catalog of recent LEGO sets. Marketplace price comparisons are coming next.</p>
+          <p>Browse LEGO sets now and compare human-seller marketplace offers whenever they are available.</p>
         </div>
         <aside>
           <span class="source-dot" aria-hidden="true"></span>
           <div>
-            <strong>Catalog data from Rebrickable</strong>
-            <small>Set metadata only — not a seller or price quote</small>
+            <strong>LEGO set identity + human-seller marketplace offers</strong>
+            <small>Rebrickable supplies set details; eBay and Brick Owl supply optional resale listings</small>
           </div>
         </aside>
       </section>
@@ -83,7 +83,7 @@
 
       <section class="empty-state" id="empty-state" hidden>
         <h2>No products matched those filters.</h2>
-        <p>This page contains the curated catalog. The dashboard’s add-item search still searches Rebrickable’s wider catalog.</p>
+        <p>The LEGO catalog remains available even when marketplace listings have not been connected or synced yet.</p>
         <button class="primary-button" id="empty-clear" type="button">Clear filters</button>
       </section>
 
@@ -103,7 +103,7 @@
           <img loading="lazy" alt="" />
         </button>
         <div class="product-content">
-          <div class="source-tag"><span></span> Rebrickable catalog</div>
+          <div class="source-tag"><span></span> Set details</div>
           <h2><button class="product-title" type="button"></button></h2>
           <p class="set-number"></p>
           <dl>
@@ -112,10 +112,24 @@
             <div><dt>Pieces</dt><dd class="piece-count"></dd></div>
           </dl>
           <div class="price-status">
-            <span>Original retail</span>
+            <span>Original MSRP reference</span>
             <strong class="retail-price">Checking…</strong>
           </div>
-          <button class="add-to-portfolio" type="button">Add to portfolio</button>
+          <div class="marketplace-price">
+            <div>
+              <span><b>eBay</b> resale listings</span>
+              <small class="ebay-listing-count">Checking…</small>
+            </div>
+            <a class="ebay-price" target="_blank" rel="noopener noreferrer" aria-disabled="true">Not synced</a>
+          </div>
+          <div class="marketplace-price brickowl-marketplace-price">
+            <div>
+              <span><b>Brick Owl</b> seller listings</span>
+              <small class="brickowl-listing-count">Checking…</small>
+            </div>
+            <a class="brickowl-price" target="_blank" rel="noopener noreferrer" aria-disabled="true">Not synced</a>
+          </div>
+          <button class="add-to-portfolio" type="button" hidden disabled>Add to portfolio</button>
         </div>
       </article>
     </template>
@@ -124,7 +138,7 @@
       <div class="preview-content">
         <button id="close-preview" class="preview-close" type="button" aria-label="Close image">×</button>
         <div class="preview-gallery"><button id="preview-previous" class="gallery-arrow previous" type="button" aria-label="Previous photo">‹</button><img id="preview-image" alt="" /><button id="preview-next" class="gallery-arrow next" type="button" aria-label="Next photo">›</button><span id="preview-counter" class="gallery-counter">1 / 1</span></div>
-        <div><p class="eyebrow">LEGO SET</p><h2 id="preview-name"></h2><p id="preview-meta"></p><button id="preview-add" class="preview-add" type="button">Add to portfolio</button><a id="preview-brickset-link" class="brickset-link" target="_blank" rel="noopener noreferrer">View details on Brickset ↗</a></div>
+        <div><p class="eyebrow">LEGO SET</p><h2 id="preview-name"></h2><p id="preview-meta"></p><button id="preview-add" class="preview-add" type="button" hidden disabled>Add to portfolio</button><a id="preview-brickset-link" class="brickset-link" target="_blank" rel="noopener noreferrer">View details on Brickset ↗</a></div>
       </div>
     </dialog>
 

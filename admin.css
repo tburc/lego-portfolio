@@ -363,6 +363,27 @@ input:focus {
   margin: 0;
 }
 
+.catalog-admin-actions {
+  display: grid;
+  width: min(100%, 310px);
+  gap: 8px;
+}
+
+.ebay-sync-button {
+  min-height: 42px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 8px;
+  color: #fff;
+  background: #1d57a5;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.ebay-sync-button:hover { background: #164684; }
+.ebay-sync-button:disabled { cursor: wait; opacity: .65; }
+
 .admin-product-list {
   display: grid;
   margin-top: 22px;
@@ -425,6 +446,7 @@ input:focus {
 }
 
 .admin-list-status { margin: 16px 0 0; }
+.ebay-sync-status { margin: 8px 0 0; color: #52677f; font-size: 12px; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
 button:focus-visible,
@@ -454,6 +476,10 @@ input:focus-visible {
   }
 
   .admin-search {
+    width: 100%;
+  }
+
+  .catalog-admin-actions {
     width: 100%;
   }
 
