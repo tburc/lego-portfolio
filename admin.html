@@ -3,6 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="referrer" content="no-referrer" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://cjahovglnavlluorxotb.supabase.co wss://cjahovglnavlluorxotb.supabase.co; form-action 'self'; upgrade-insecure-requests" />
     <meta name="description" content="Secure legofolio administrator sign in." />
     <title>legofolio — Admin</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -26,8 +28,13 @@
 
     <main>
       <section class="auth-card" id="loading-view" aria-live="polite">
-        <div class="loader" aria-hidden="true"></div>
-        <p>Checking your session…</p>
+        <div class="session-skeleton" aria-hidden="true">
+          <span class="skeleton-block skeleton-badge"></span>
+          <span class="skeleton-block skeleton-title"></span>
+          <span class="skeleton-block skeleton-copy"></span>
+          <span class="skeleton-block skeleton-copy short"></span>
+        </div>
+        <p class="sr-only">Checking your session…</p>
       </section>
 
       <section class="auth-card" id="login-view" hidden aria-labelledby="login-title">

@@ -75,7 +75,7 @@ async function loadAdminProducts() {
   const list = document.querySelector("#admin-product-list");
   const status = document.querySelector("#admin-list-status");
   const search = safeSearchTerm(document.querySelector("#admin-product-search").value);
-  list.innerHTML = '<p class="admin-list-loading">Loading catalog products…</p>';
+  list.innerHTML = `<div class="admin-list-skeleton" aria-hidden="true">${Array.from({ length: 5 }, () => '<div class="admin-list-skeleton-row"><span class="skeleton-block thumb"></span><span class="lines"><span class="skeleton-block"></span><span class="skeleton-block"></span></span><span class="skeleton-block control"></span></div>').join("")}</div><p class="sr-only">Loading catalog products…</p>`;
   status.textContent = "";
 
   let query = window.supabaseClient

@@ -4,6 +4,12 @@ let currentUser = null;
 let toastTimer;
 let selectedChartPeriod = "ALL";
 let editingItem = null;
+let pendingDeleteItem = null;
+let selectedSetChartPeriod = "ALL";
+let selectedSetItem = null;
+let selectedSetHistory = [];
+let portfolioChartHoverPoints = [];
+let setChartHoverPoints = [];
 
 const dialog = document.querySelector("#dialog");
 const form = dialog.querySelector("form");
@@ -24,6 +30,16 @@ const editPurchasePrice = document.querySelector("#edit-purchase-price");
 const editCurrentValue = document.querySelector("#edit-current-value");
 const editResult = document.querySelector("#edit-result");
 const saveEditButton = document.querySelector("#save-edit");
+const deleteDialog = document.querySelector("#delete-dialog");
+const deleteForm = document.querySelector("#delete-form");
+const deleteItemName = document.querySelector("#delete-item-name");
+const confirmDeleteButton = document.querySelector("#confirm-delete");
+const deleteAccountDialog = document.querySelector("#delete-account-dialog");
+const deleteAccountForm = document.querySelector("#delete-account-form");
+const deleteAccountConfirmation = document.querySelector("#delete-account-confirmation");
+const deleteAccountResult = document.querySelector("#delete-account-result");
+const confirmDeleteAccountButton = document.querySelector("#confirm-delete-account");
+const setChartDialog = document.querySelector("#set-chart-dialog");
 const imageDialog = document.querySelector("#image-dialog");
 const galleryImage = document.querySelector("#gallery-image");
 const imagePrevious = document.querySelector("#image-previous");
@@ -46,6 +62,109 @@ const price = (value) => new Intl.NumberFormat("en-US", { style: "currency", cur
 let galleryImages = [];
 let galleryIndex = 0;
 let galleryRequest = 0;
+const holdingMetricModes = ["equity", "totalReturn", "totalPercent", "todayReturn"];
+let holdingMetricMode = localStorage.getItem("legofolio-holding-metric") || "equity";
+if (!holdingMetricModes.includes(holdingMetricMode)) holdingMetricMode = "equity";
+
+function holdingMetric(item) {
+  const equity = Number(item.estimated_value || 0);
+  const cost = Number(item.purchase_price || 0);
+  const totalReturn = equity - cost;
+  const totalPercent = cost > 0 ? (totalReturn / cost) * 100 : null;
+  const sign = totalReturn >= 0 ? "+" : "−";
+  const tone = totalReturn >= 0 ? "positive" : "negative";
+
+  if (holdingMetricMode === "totalReturn") return { label: "Total return", value: `${sign}${price(Math.abs(totalReturn))}`, tone };
+  if (holdingMetricMode === "totalPercent") {
+    return totalPercent === null
+      ? { label: "Total return %", value: "—", tone: "unavailable" }
+      : { label: "Total return %", value: `${sign}${Math.abs(totalPercent).toFixed(1)}%`, tone };
+  }
+  if (holdingMetricMode === "todayReturn") {
+    return { label: "Today's return", value: "—", tone: "unavailable", title: "Daily item price history is not available yet" };
+  }
+  return { label: "Your equity", value: price(equity), tone: "" };
+}
+
+function cycleHoldingMetric() {
+  const currentIndex = holdingMetricModes.indexOf(holdingMetricMode);
+  holdingMetricMode = holdingMetricModes[(currentIndex + 1) % holdingMetricModes.length];
+  localStorage.setItem("legofolio-holding-metric", holdingMetricMode);
+  renderCollection();
+}
+
+function enableChartScrubbing(stage, lineId, dotId, tooltipId, pointsProvider) {
+  const svg = stage.querySelector("svg");
+  let line = document.querySelector(`#${lineId}`);
+  let dot = document.querySelector(`#${dotId}`);
+  let tooltip = document.querySelector(`#${tooltipId}`);
+  if (!line) {
+    line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    line.id = lineId;
+    line.classList.add("chart-scrub-line");
+    line.setAttribute("y1", "15");
+    line.setAttribute("y2", "265");
+    svg.append(line);
+  }
+  if (!dot) {
+    dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    dot.id = dotId;
+    dot.classList.add("chart-scrub-dot");
+    dot.setAttribute("r", "6");
+    svg.append(dot);
+  }
+  if (!tooltip) {
+    tooltip = document.createElement("div");
+    tooltip.id = tooltipId;
+    tooltip.className = "chart-tooltip";
+    tooltip.innerHTML = "<strong></strong><span></span>";
+    tooltip.hidden = true;
+    stage.append(tooltip);
+  }
+
+  const hide = () => {
+    line.style.opacity = "0";
+    dot.style.opacity = "0";
+    tooltip.hidden = true;
+  };
+  const scrub = (event) => {
+    const points = pointsProvider();
+    if (!points.length || svg.hidden) return hide();
+    const bounds = svg.getBoundingClientRect();
+    const chartX = Math.max(0, Math.min(700, ((event.clientX - bounds.left) / bounds.width) * 700));
+    let point = points[0];
+    if (points.length > 1) {
+      const rightIndex = points.findIndex((candidate) => candidate.x >= chartX);
+      if (rightIndex < 0) point = points.at(-1);
+      else if (rightIndex === 0) point = points[0];
+      else {
+        const left = points[rightIndex - 1];
+        const right = points[rightIndex];
+        const ratio = Math.max(0, Math.min(1, (chartX - left.x) / Math.max(right.x - left.x, 0.001)));
+        point = {
+          x: left.x + (right.x - left.x) * ratio,
+          y: left.y + (right.y - left.y) * ratio,
+          value: left.value + (right.value - left.value) * ratio,
+          date: new Date(left.date.getTime() + (right.date.getTime() - left.date.getTime()) * ratio),
+        };
+      }
+    }
+    line.setAttribute("x1", point.x);
+    line.setAttribute("x2", point.x);
+    dot.setAttribute("cx", point.x);
+    dot.setAttribute("cy", point.y);
+    line.style.opacity = "1";
+    dot.style.opacity = "1";
+    tooltip.querySelector("strong").textContent = price(point.value);
+    tooltip.querySelector("span").textContent = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(point.date);
+    tooltip.style.left = `${Math.max(12, Math.min(88, (point.x / 700) * 100))}%`;
+    tooltip.hidden = false;
+  };
+  stage.addEventListener("pointermove", scrub);
+  stage.addEventListener("pointerdown", scrub);
+  stage.addEventListener("pointerleave", hide);
+  stage.addEventListener("pointercancel", hide);
+}
 
 dialog.addEventListener("click", (event) => {
   if (event.target === dialog) dialog.close();
@@ -366,12 +485,28 @@ function updateProgress() {
   document.querySelector("#level-progress").style.width = `${Math.min(progress, 100)}%`;
   document.querySelector("#next-milestone").textContent = total && next ? `${next.at - total} item${next.at - total === 1 ? "" : "s"} until ${next.name}` : total ? "Highest collector level reached" : "Verified portfolio tracking is coming later";
 
-  const setPercent = total ? Math.round((sets / total) * 100) : 0;
-  const minifigurePercent = total ? 100 - setPercent : 0;
+  const setValue = collection
+    .filter((item) => item.item_type === "set")
+    .reduce((sum, item) => sum + Math.max(0, Number(item.estimated_value) || 0), 0);
+  const minifigureValue = collection
+    .filter((item) => item.item_type === "minifigure")
+    .reduce((sum, item) => sum + Math.max(0, Number(item.estimated_value) || 0), 0);
+  const categorizedValue = setValue + minifigureValue;
+  const setPercent = categorizedValue > 0 ? Math.round((setValue / categorizedValue) * 100) : 0;
+  const minifigurePercent = categorizedValue > 0 ? 100 - setPercent : 0;
+  const mixDonut = document.querySelector("#mix-donut");
   document.querySelector("#set-mix").textContent = `${setPercent}%`;
   document.querySelector("#minifigure-mix").textContent = `${minifigurePercent}%`;
-  document.querySelector("#mix-donut").innerHTML = `${total}<small> items</small>`;
-  document.querySelector("#mix-donut").style.background = total ? `conic-gradient(#147a47 0 ${setPercent}%, #e8b84c ${setPercent}% 100%)` : "#edf2ee";
+  document.querySelector("#set-mix-value").textContent = price(setValue);
+  document.querySelector("#minifigure-mix-value").textContent = price(minifigureValue);
+  document.querySelector("#mix-total-value").textContent = `${price(categorizedValue)} total`;
+  mixDonut.innerHTML = `<span class="mix-donut-label"><strong>${categorizedValue > 0 ? "100%" : "0%"}</strong><small>allocated</small></span>`;
+  mixDonut.style.background = categorizedValue > 0
+    ? `conic-gradient(#147a47 0 ${setPercent}%, #e8b84c ${setPercent}% 100%)`
+    : "#edf2ee";
+  mixDonut.setAttribute("aria-label", categorizedValue > 0
+    ? `Collection value allocation: sets ${setPercent} percent, minifigures ${minifigurePercent} percent`
+    : "No valued collection items");
   renderValueChart();
 }
 
@@ -446,7 +581,7 @@ function renderDetailedChart(period) {
   detailValue.textContent = `${latest >= 0 ? "+" : "−"}${price(Math.abs(latest))}`;
   detailChange.textContent = `${positive ? "+" : "−"}${price(Math.abs(change))} (${positive ? "+" : "−"}${Math.abs(changePercent).toFixed(1)}%) · ${period}`;
   detailChange.className = positive ? "positive" : "negative";
-  document.querySelectorAll(".chart-period").forEach((button) => button.classList.toggle("active", button.dataset.period === period));
+  document.querySelectorAll("#chart-dialog .chart-period").forEach((button) => button.classList.toggle("active", button.dataset.period === period));
   document.querySelector("#chart-empty").hidden = history.length > 0;
 
   const chartHistory = history.length === 1
@@ -462,10 +597,12 @@ function renderDetailedChart(period) {
   const coordinates = chartHistory.map((entry) => ({
     x: Math.max(0, Math.min(700, ((new Date(entry.recorded_at) - axisStart) / axisRange) * 700)),
     value: Number(entry.total_value || 0) - Number(entry.total_cost || 0),
+    date: new Date(entry.recorded_at),
   })).map((point) => ({
-    x: point.x,
+    ...point,
     y: 255 - ((point.value - min) / range) * 230,
   }));
+  portfolioChartHoverPoints = coordinates;
   const line = coordinates.map((point, index) => `${index ? "L" : "M"}${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(" ");
   const last = coordinates.at(-1);
   const lineElement = document.querySelector("#detail-line");
@@ -501,14 +638,104 @@ function editItem(item) {
   setTimeout(() => editPurchasePrice.select(), 50);
 }
 
-async function deleteItem(item) {
-  if (!window.confirm(`Remove ${item.name} from your collection?`)) return;
-  const { error } = await window.supabaseClient.from("collection_items").delete().eq("id", item.id);
-  if (error) return showToast(`Could not remove: ${error.message}`);
+function deleteItem(item) {
+  pendingDeleteItem = item;
+  deleteItemName.textContent = item.name;
+  confirmDeleteButton.disabled = false;
+  confirmDeleteButton.textContent = "Remove item";
+  deleteDialog.showModal();
+}
+
+function renderSetChart(period) {
+  selectedSetChartPeriod = period;
+  const start = periodStart(period);
+  const history = selectedSetHistory.filter((entry) => !start || new Date(entry.recorded_at) >= start);
+  document.querySelectorAll(".set-chart-period").forEach((button) => button.classList.toggle("active", button.dataset.period === period));
+  const empty = document.querySelector("#set-chart-empty");
+  const svg = document.querySelector("#set-chart-dialog svg");
+  const latest = history.length ? Number(history.at(-1).average_item_price || 0) : Number(selectedSetItem?.estimated_value || 0);
+  document.querySelector("#set-detail-value").textContent = price(latest);
+  empty.hidden = history.length >= 2;
+  svg.hidden = false;
+  if (history.length < 2) {
+    const onlyEntry = history[0];
+    const currentPoint = {
+      x: 700,
+      y: 140,
+      value: onlyEntry ? Number(onlyEntry.average_item_price || 0) : latest,
+      date: onlyEntry ? new Date(onlyEntry.recorded_at) : new Date(),
+    };
+    setChartHoverPoints = [currentPoint];
+    document.querySelector("#set-detail-line").setAttribute("d", "M700 140");
+    document.querySelector("#set-detail-area").setAttribute("d", "M700 140 L700 280 Z");
+    document.querySelector("#set-detail-dot").setAttribute("cx", "700");
+    document.querySelector("#set-detail-dot").setAttribute("cy", "140");
+    document.querySelector("#set-detail-change").textContent = `Current tracked value · ${period}`;
+    document.querySelector("#set-detail-change").className = "";
+    return;
+  }
+
+  const values = history.map((entry) => Number(entry.average_item_price || 0));
+  const change = values.at(-1) - values[0];
+  const changePercent = values[0] > 0 ? (change / values[0]) * 100 : 0;
+  const positive = change >= 0;
+  document.querySelector("#set-detail-change").textContent = `${positive ? "+" : "−"}${price(Math.abs(change))} (${positive ? "+" : "−"}${Math.abs(changePercent).toFixed(1)}%) · ${period}`;
+  document.querySelector("#set-detail-change").className = positive ? "positive" : "negative";
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = Math.max(max - min, 1);
+  const firstTime = new Date(history[0].recorded_at).getTime();
+  const lastTime = new Date(history.at(-1).recorded_at).getTime();
+  const timeRange = Math.max(lastTime - firstTime, 1);
+  const coordinates = history.map((entry) => ({
+    x: ((new Date(entry.recorded_at).getTime() - firstTime) / timeRange) * 700,
+    y: 255 - ((Number(entry.average_item_price || 0) - min) / range) * 230,
+    value: Number(entry.average_item_price || 0),
+    date: new Date(entry.recorded_at),
+  }));
+  setChartHoverPoints = coordinates;
+  const line = coordinates.map((point, index) => `${index ? "L" : "M"}${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(" ");
+  const last = coordinates.at(-1);
+  document.querySelector("#set-detail-line").setAttribute("d", line);
+  document.querySelector("#set-detail-area").setAttribute("d", `${line} L${last.x.toFixed(1)} 280 L${coordinates[0].x.toFixed(1)} 280 Z`);
+  document.querySelector("#set-detail-dot").setAttribute("cx", last.x);
+  document.querySelector("#set-detail-dot").setAttribute("cy", last.y);
+}
+
+async function openSetChart(item) {
+  selectedSetItem = item;
+  selectedSetHistory = [];
+  document.querySelector("#set-chart-name").textContent = item.name;
+  document.querySelector("#set-chart-subtitle").textContent = `Set ${item.item_number} · marketplace price history`;
+  setChartDialog.showModal();
+  renderSetChart(selectedSetChartPeriod);
+  const { data, error } = await window.supabaseClient
+    .from("marketplace_price_snapshots")
+    .select("average_item_price,recorded_at,marketplace,currency_code")
+    .eq("set_num", item.item_number)
+    .order("recorded_at", { ascending: true })
+    .limit(2000);
+  if (selectedSetItem?.id !== item.id) return;
+  if (error) {
+    document.querySelector("#set-chart-empty").textContent = `Price history could not load: ${error.message}`;
+    return;
+  }
+  selectedSetHistory = data || [];
+  document.querySelector("#set-chart-empty").textContent = "Not enough real price history for this period yet.";
+  renderSetChart(selectedSetChartPeriod);
+}
+
+async function confirmDelete(item) {
+  const { error } = await window.supabaseClient.from("collection_items").delete().eq("id", item.id).eq("user_id", currentUser.id);
+  if (error) {
+    showToast(`Could not remove: ${error.message}`);
+    return false;
+  }
   collection = collection.filter((entry) => entry.id !== item.id);
   await loadHistory();
   renderCollection();
   showToast("Item removed from your collection.");
+  return true;
 }
 
 function renderCollection() {
@@ -543,22 +770,40 @@ function renderCollection() {
         });
       } else tile.textContent = item.item_type === "minifigure" ? "M" : "◆";
       const description = document.createElement("div");
+      description.className = "holding-description";
       const name = document.createElement("strong");
       name.textContent = item.name;
       const meta = document.createElement("small");
       meta.textContent = `${item.item_type === "minifigure" ? "Minifigure" : "Set"} ${item.item_number}${item.year ? ` · ${item.year}` : ""}`;
       description.append(name, meta);
-      const value = document.createElement("div");
-      value.className = "value";
+      if (item.item_type === "set") {
+        const chartHint = document.createElement("small");
+        chartHint.className = "chart-link-hint";
+        chartHint.textContent = "↗ View price graph";
+        description.append(chartHint);
+        description.tabIndex = 0;
+        description.setAttribute("role", "button");
+        description.setAttribute("aria-label", `Open price chart for ${item.name}`);
+        description.addEventListener("click", () => openSetChart(item));
+        description.addEventListener("keydown", (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            openSetChart(item);
+          }
+        });
+      }
+      const value = document.createElement("button");
+      value.type = "button";
+      const metric = holdingMetric(item);
+      value.className = `holding-metric ${metric.tone}`.trim();
+      value.title = metric.title || "Click to show the next portfolio metric";
+      value.setAttribute("aria-label", `${item.name}: ${metric.label} ${metric.value}. Click to show the next metric.`);
       const amount = document.createElement("strong");
-      amount.textContent = price(item.estimated_value);
-      const added = document.createElement("small");
-      const itemCost = Number(item.purchase_price || 0);
-      const itemGain = Number(item.estimated_value || 0) - itemCost;
-      const itemGainPercent = itemCost > 0 ? (itemGain / itemCost) * 100 : 0;
-      added.className = itemGain >= 0 ? "positive" : "negative";
-      added.textContent = `${itemGain >= 0 ? "+" : "−"}${price(Math.abs(itemGain))} (${itemGain >= 0 ? "+" : "−"}${Math.abs(itemGainPercent).toFixed(1)}%)`;
-      value.append(amount, added);
+      amount.textContent = metric.value;
+      const metricLabel = document.createElement("small");
+      metricLabel.textContent = metric.label;
+      value.append(amount, metricLabel);
+      value.addEventListener("click", cycleHoldingMetric);
       const actions = document.createElement("div");
       actions.className = "holding-actions";
       actions.append(makeAction("Edit", "edit", () => editItem(item)), makeAction("Delete", "delete", () => deleteItem(item)));
@@ -575,7 +820,14 @@ async function loadCollection() {
     window.supabaseClient.from("collection_value_history").select("*").order("recorded_at", { ascending: false }).limit(200),
   ]);
   if (error) {
-    holdingsList.innerHTML = `<div class="empty-collection"><strong>Collection could not load</strong><span>${error.message}</span></div>`;
+    const errorState = document.createElement("div");
+    errorState.className = "empty-collection";
+    const errorTitle = document.createElement("strong");
+    errorTitle.textContent = "Collection could not load";
+    const errorMessage = document.createElement("span");
+    errorMessage.textContent = error.message;
+    errorState.append(errorTitle, errorMessage);
+    holdingsList.replaceChildren(errorState);
     return;
   }
   collection = data || [];
@@ -769,8 +1021,28 @@ document.querySelector("#cancel-add").addEventListener("click", () => { resetDia
 dialog.addEventListener("cancel", resetDialog);
 document.querySelector("#cancel-edit").addEventListener("click", () => { editingItem = null; editDialog.close("cancel"); });
 editDialog.addEventListener("close", () => { editingItem = null; editResult.textContent = ""; });
+document.querySelector("#cancel-delete").addEventListener("click", () => deleteDialog.close("cancel"));
+deleteDialog.addEventListener("click", (event) => {
+  if (event.target === deleteDialog) deleteDialog.close("cancel");
+});
+deleteDialog.addEventListener("close", () => { pendingDeleteItem = null; });
+deleteForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!pendingDeleteItem) return;
+  const item = pendingDeleteItem;
+  confirmDeleteButton.disabled = true;
+  confirmDeleteButton.textContent = "Removingâ€¦";
+  const removed = await confirmDelete(item);
+  if (removed) deleteDialog.close("confirmed");
+  else {
+    confirmDeleteButton.disabled = false;
+    confirmDeleteButton.textContent = "Try again";
+  }
+});
 const chartButton = document.querySelector("#open-chart");
 const chartDialog = document.querySelector("#chart-dialog");
+enableChartScrubbing(document.querySelector("#chart-dialog .chart-stage"), "portfolio-scrub-line", "portfolio-scrub-dot", "portfolio-chart-tooltip", () => portfolioChartHoverPoints);
+enableChartScrubbing(document.querySelector("#set-chart-stage"), "set-scrub-line", "set-scrub-dot", "set-chart-tooltip", () => setChartHoverPoints);
 const openDetailedChart = () => {
   renderDetailedChart(selectedChartPeriod);
   chartDialog.showModal();
@@ -782,16 +1054,57 @@ chartButton.addEventListener("keydown", (event) => {
     openDetailedChart();
   }
 });
-document.querySelectorAll(".chart-period").forEach((button) => button.addEventListener("click", () => renderDetailedChart(button.dataset.period)));
+document.querySelectorAll("#chart-dialog .chart-period").forEach((button) => button.addEventListener("click", () => renderDetailedChart(button.dataset.period)));
+document.querySelectorAll(".set-chart-period").forEach((button) => button.addEventListener("click", () => renderSetChart(button.dataset.period)));
+setChartDialog.addEventListener("close", () => {
+  selectedSetItem = null;
+  selectedSetHistory = [];
+});
 document.querySelector("#sign-out").addEventListener("click", async () => {
   await window.supabaseClient.auth.signOut();
   window.location.replace("index.html");
+});
+document.querySelector("#delete-account").addEventListener("click", () => {
+  deleteAccountConfirmation.value = "";
+  deleteAccountResult.textContent = "";
+  confirmDeleteAccountButton.disabled = false;
+  confirmDeleteAccountButton.textContent = "Delete forever";
+  deleteAccountDialog.showModal();
+  setTimeout(() => deleteAccountConfirmation.focus(), 50);
+});
+document.querySelector("#cancel-delete-account").addEventListener("click", () => deleteAccountDialog.close("cancel"));
+deleteAccountDialog.addEventListener("click", (event) => {
+  if (event.target === deleteAccountDialog) deleteAccountDialog.close("cancel");
+});
+deleteAccountForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (deleteAccountConfirmation.value.trim() !== "DELETE") {
+    deleteAccountResult.textContent = "Type DELETE exactly to continue.";
+    return;
+  }
+  confirmDeleteAccountButton.disabled = true;
+  confirmDeleteAccountButton.textContent = "Deleting…";
+  deleteAccountResult.textContent = "";
+  const { data, error } = await window.supabaseClient.functions.invoke("delete-account", { body: { confirmation: "DELETE" } });
+  if (error || data?.error) {
+    deleteAccountResult.textContent = data?.error || error.message;
+    confirmDeleteAccountButton.disabled = false;
+    confirmDeleteAccountButton.textContent = "Try again";
+    return;
+  }
+  await window.supabaseClient.auth.signOut();
+  window.location.replace("index.html?account=deleted");
 });
 
 async function initialize() {
   const { data: { session } } = await window.supabaseClient.auth.getSession();
   if (!session) return window.location.replace("index.html");
   currentUser = session.user;
+  const pendingTermsVersion = sessionStorage.getItem("legofolio-oauth-terms-version");
+  if (pendingTermsVersion) {
+    const { error: termsError } = await window.supabaseClient.rpc("accept_current_terms", { accepted_version: pendingTermsVersion });
+    if (!termsError) sessionStorage.removeItem("legofolio-oauth-terms-version");
+  }
   const username = currentUser.user_metadata.username || currentUser.email.split("@")[0];
   document.querySelector("#profile-name").textContent = username;
   document.querySelector("#welcome-message").textContent = `Good afternoon, ${username}.`;

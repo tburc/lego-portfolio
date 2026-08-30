@@ -3,6 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://cjahovglnavlluorxotb.supabase.co wss://cjahovglnavlluorxotb.supabase.co; form-action 'self'; upgrade-insecure-requests" />
     <meta
       name="description"
       content="Create your account with Google or with a username, email, and password."
@@ -68,6 +70,13 @@
             </svg>
             Continue with Google
           </button>
+
+          <button class="apple-button" id="apple-signup" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M16.7 12.9c0-2.4 2-3.6 2.1-3.7a4.5 4.5 0 0 0-3.5-1.9c-1.5-.2-2.9.9-3.6.9-.7 0-1.8-.9-3-.9a4.8 4.8 0 0 0-4.1 2.5c-1.8 3.1-.5 7.7 1.3 10.2.9 1.3 1.9 2.7 3.3 2.6 1.3 0 1.8-.8 3.4-.8 1.6 0 2 .8 3.4.8 1.4 0 2.3-1.3 3.2-2.6a11 11 0 0 0 1.4-2.9 4.2 4.2 0 0 1-3.9-4.2ZM14.3 5.8A4.2 4.2 0 0 0 15.4 2a4.3 4.3 0 0 0-3 1.4 4 4 0 0 0-1.1 3.1 3.6 3.6 0 0 0 3-0.7Z"/></svg>
+            Continue with Apple
+          </button>
+
+          <p class="oauth-terms">By continuing with Google or Apple, you agree to the <a href="terms.html">Terms of Service</a> and acknowledge the <a href="privacy.html">Privacy Policy</a>.</p>
 
           <div class="divider"><span>or sign up with email</span></div>
 
@@ -142,8 +151,8 @@
             <label class="terms">
               <input id="terms" name="terms" type="checkbox" required />
               <span>
-                I agree to the <a href="#">Terms of Service</a> and
-                <a href="#">Privacy Policy</a>.
+                I agree to the <a href="terms.html">Terms of Service</a> and
+                <a href="privacy.html">Privacy Policy</a>.
               </span>
             </label>
             <p class="error terms-error" id="terms-error"></p>

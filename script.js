@@ -7,8 +7,10 @@ const passwordToggle = document.querySelector(".password-toggle");
 const passwordMeter = document.querySelector(".password-meter");
 const passwordHint = document.querySelector("#password-hint");
 const googleButton = document.querySelector("#google-signup");
+const appleButton = document.querySelector("#apple-signup");
 const signInButton = document.querySelector("#signin-button");
 const notice = document.querySelector("#notice");
+const CURRENT_TERMS_VERSION = "2026-08-29";
 
 const fields = {
   username: {
@@ -126,7 +128,7 @@ form.addEventListener("submit", async (event) => {
     const { data, error } = await window.supabaseClient.auth.signUp({
       email: emailInput.value.trim(),
       password: passwordInput.value,
-      options: { data: { username: usernameInput.value.trim() } },
+      options: { data: { username: usernameInput.value.trim(), terms_version: CURRENT_TERMS_VERSION } },
     });
 
     if (error) throw error;
@@ -148,13 +150,32 @@ form.addEventListener("submit", async (event) => {
   }
 });
 
-googleButton.addEventListener("click", () => {
+async function signInWithProvider(provider, button) {
   clearNotice();
-  showNotice(
-    "Google sign-in needs to be enabled in Supabase before it can be used.",
-    "info",
-  );
-});
+  sessionStorage.setItem("legofolio-oauth-terms-version", CURRENT_TERMS_VERSION);
+  const originalText = button.lastChild.textContent;
+  button.disabled = true;
+  button.lastChild.textContent = " Connecting…";
+  try {
+    const { error } = await window.supabaseClient.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: new URL("dashboard.html", window.location.href).href,
+        scopes: provider === "apple" ? "name email" : "email profile",
+        queryParams: provider === "google" ? { prompt: "select_account" } : undefined,
+      },
+    });
+    if (error) throw error;
+  } catch (error) {
+    sessionStorage.removeItem("legofolio-oauth-terms-version");
+    button.disabled = false;
+    button.lastChild.textContent = originalText;
+    showNotice(error.message || `We could not connect to ${provider}. Please try again.`, "info");
+  }
+}
+
+googleButton.addEventListener("click", () => signInWithProvider("google", googleButton));
+appleButton.addEventListener("click", () => signInWithProvider("apple", appleButton));
 
 signInButton.addEventListener("click", async () => {
   clearNotice();

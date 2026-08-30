@@ -3,26 +3,30 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://cjahovglnavlluorxotb.supabase.co wss://cjahovglnavlluorxotb.supabase.co; form-action 'self'; upgrade-insecure-requests" />
     <title>legofolio — Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="dashboard.css" />
     <style>
+      .brand, .nav-link.active, .nav-link:hover, .profile, .add-button, menu button { color: #f4f8f5; }
+      .stats article, .panel { background: #fbfcfa; }
       .dashboard-actions { display: flex; align-items: center; gap: 10px; }
       .browse-button { padding: 10px 12px; border: 1px solid #cfe0d5; border-radius: 8px; color: #147a47; background: #f1f8f3; font-size: 12px; font-weight: 800; text-decoration: none; }
       .browse-button:hover { border-color: #147a47; background: #e5f4e9; }
-      .sign-out { padding: 10px 12px; border: 1px solid #e5ebe6; border-radius: 8px; color: #4d6257; background: #fff; font-size: 12px; font-weight: 700; }
-      .lookup-button { padding: 10px 12px; border: 0; border-radius: 8px; color: #fff; background: #147a47; font-weight: 700; }
+      .sign-out { padding: 10px 12px; border: 1px solid #e5ebe6; border-radius: 8px; color: #4d6257; background: #fbfcfa; font-size: 12px; font-weight: 700; }
+      .lookup-button { padding: 10px 12px; border: 0; border-radius: 8px; color: #f4f8f5; background: #147a47; font-weight: 700; }
       .lookup-button:disabled, #save-set:disabled { cursor: wait; opacity: .6; }
       .lookup-result { min-height: 18px; margin: -4px 0 0; color: #147a47; font-size: 12px; font-weight: 600; }
       .lookup-results { display: grid; grid-auto-rows: max-content; max-height: 250px; gap: 8px; overflow-x: hidden; overflow-y: auto; }
-      .lookup-result-card { display: grid; grid-template-columns: 58px minmax(0, 1fr); align-items: center; gap: 10px; width: 100%; min-width: 0; overflow: hidden; padding: 9px; border: 1px solid #e5ebe6; border-radius: 8px; text-align: left; background: #fff; cursor: pointer; }
+      .lookup-result-card { display: grid; grid-template-columns: 58px minmax(0, 1fr); align-items: center; gap: 10px; width: 100%; min-width: 0; overflow: hidden; padding: 9px; border: 1px solid #e5ebe6; border-radius: 8px; text-align: left; background: #fbfcfa; cursor: pointer; }
       .lookup-result-card:hover, .lookup-result-card.selected { border-color: #147a47; background: #f0f8f3; }
       .lookup-result-card img { display: block; width: 58px; height: 58px; max-width: 100%; object-fit: contain; }
       .lookup-result-card > span { min-width: 0; overflow-wrap: anywhere; }
       .lookup-result-card.selected { grid-template-columns: minmax(0, 118px) minmax(0, 1fr); min-height: 138px; }
-      .lookup-result-card.selected img { width: 118px; height: 118px; border-radius: 7px; background: #fff; transition: width .18s ease, height .18s ease; }
+      .lookup-result-card.selected img { width: 118px; height: 118px; border-radius: 7px; background: #fbfcfa; transition: width .18s ease, height .18s ease; }
       .lookup-result-card strong, .lookup-result-card small { display: block; }
       .lookup-result-card small { margin-top: 4px; color: #718278; }
       .add-button, .sign-out, .lookup-button, menu button, .lookup-result-card { transition: transform .12s ease, box-shadow .12s ease, filter .12s ease; cursor: pointer; }
@@ -38,38 +42,75 @@
       .value-chart svg { display: block; width: 100%; height: 76px; overflow: visible; }
       #value-area { fill: #bceecb99; }
       #value-line { fill: none; stroke: #147a47; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
-      #value-dot { fill: #e8b84c; stroke: #fff; stroke-width: 3; }
+      #value-dot { fill: #e8b84c; stroke: #f4f8f5; stroke-width: 3; }
       .chart-dialog { width: min(94vw, 760px); }
       .chart-dialog form { gap: 18px; }
       .chart-dialog-header { display: flex; justify-content: space-between; align-items: start; }
       .chart-dialog-header p { margin: 5px 0 0; color: #718278; font-size: 12px; }
-      .chart-close { padding: 7px 10px; border: 1px solid #dfe7e1; border-radius: 8px; background: #fff; cursor: pointer; }
+      .chart-close { padding: 7px 10px; border: 1px solid #dfe7e1; border-radius: 8px; background: #fbfcfa; cursor: pointer; }
       .chart-summary strong { display: block; font: 800 30px Manrope, sans-serif; }
       .chart-summary span { font-size: 13px; font-weight: 700; }
       .chart-periods { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 4px; }
       .chart-period { flex: 0 0 auto; padding: 7px 10px; border: 0; border-radius: 7px; color: #607468; background: transparent; font-weight: 700; cursor: pointer; }
-      .chart-period:hover, .chart-period.active { color: #fff; background: #147a47; }
+      .chart-period:hover, .chart-period.active { color: #f4f8f5; background: #147a47; }
       .chart-stage { padding: 16px; border: 1px solid #e5ebe6; border-radius: 12px; background: #fbfdfb; }
+      .chart-stage { position: relative; touch-action: none; }
       .chart-stage svg { display: block; width: 100%; height: 270px; }
+      .chart-scrub-line { stroke: #718278; stroke-width: 1; stroke-dasharray: 4 4; opacity: 0; pointer-events: none; }
+      .chart-scrub-dot { fill: #147a47; stroke: #f4f8f5; stroke-width: 3; opacity: 0; pointer-events: none; }
+      .chart-tooltip { position: absolute; top: 12px; z-index: 3; min-width: 112px; padding: 8px 10px; border: 1px solid #d9e4dc; border-radius: 8px; color: #10261d; background: #fbfcfa; box-shadow: 0 7px 20px #10261d1f; font-size: 11px; pointer-events: none; transform: translateX(-50%); }
+      .chart-tooltip strong, .chart-tooltip span { display: block; }
+      .chart-tooltip span { margin-top: 2px; color: #718278; font-size: 10px; }
       #detail-area { fill: #bceecb80; }
       #detail-line { fill: none; stroke: #147a47; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
-      #detail-dot { fill: #e8b84c; stroke: #fff; stroke-width: 3; }
+      #detail-dot { fill: #e8b84c; stroke: #f4f8f5; stroke-width: 3; }
+      #set-detail-area { fill: #bceecb80; }
+      #set-detail-line { fill: none; stroke: #147a47; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+      #set-detail-dot { fill: #e8b84c; stroke: #f4f8f5; stroke-width: 3; }
+      .holding-description { padding: 7px; border: 1px solid transparent; border-radius: 8px; cursor: pointer; transition: border-color .12s ease, background .12s ease, transform .12s ease; }
+      .holding-description:hover { border-color: #cfe2d5; background: #f4f8f5; transform: translateY(-1px); }
+      .holding-description:focus-visible { outline: 2px solid #147a47; outline-offset: 2px; }
+      .holding-description > strong { color: #126f42; text-decoration: underline; text-decoration-color: #9fc9ad; text-underline-offset: 3px; }
+      .chart-link-hint { display: inline-flex !important; align-items: center; gap: 4px; margin-top: 6px !important; padding: 3px 7px; border-radius: 999px; color: #126f42 !important; background: #e5f2e8; font-size: 9px !important; font-weight: 800; letter-spacing: .35px; text-transform: uppercase; }
       .chart-empty { margin: 0; color: #718278; text-align: center; font-size: 12px; }
       .level-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 700; }
       .level-bar { height: 9px; margin: 10px 0 7px; overflow: hidden; border-radius: 999px; background: #c7dfce; }
       .level-bar span { display: block; width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #147a47, #e8b84c); transition: width .5s ease; }
       .level-card small { color: #587466; }
       .holding-actions { display: flex; gap: 5px; margin-left: 5px; }
-      .item-action { padding: 7px 8px; border: 1px solid #dfe7e1; border-radius: 7px; color: #52665b; background: #fff; cursor: pointer; }
+      .item-action { padding: 7px 8px; border: 1px solid #dfe7e1; border-radius: 7px; color: #52665b; background: #fbfcfa; cursor: pointer; }
       .item-action:hover { border-color: #147a47; color: #147a47; }
-      .item-action.delete:hover { border-color: #c0524d; color: #c0524d; }
+      .item-action.delete { border-color: #efd7d4; color: #a9433e; background: #fdf7f6; }
+      .item-action.delete:hover { border-color: #c0524d; color: #8e332f; background: #f8e9e7; }
+      .holding-metric { min-width: 112px; padding: 7px 9px; border: 1px solid transparent; border-radius: 8px; text-align: right; background: transparent; cursor: pointer; transition: background .12s ease, border-color .12s ease; }
+      .holding-metric:hover { border-color: #dfe7e1; background: #f4f8f5; }
+      .holding-metric:focus-visible { outline: 2px solid #147a47; outline-offset: 2px; }
+      .holding-metric strong, .holding-metric small { display: block; }
+      .holding-metric small { margin-top: 3px; color: #85958b; font-size: 9px; font-weight: 800; letter-spacing: .45px; text-transform: uppercase; }
+      .holding-metric.positive strong { color: #128049; }
+      .holding-metric.negative strong { color: #c0524d; }
+      .holding-metric.unavailable strong { color: #718278; }
+      .delete-dialog { width: min(90vw, 410px); padding: 0; overflow: hidden; }
+      .delete-dialog form { gap: 0; padding: 0; }
+      .delete-dialog-content { padding: 25px 25px 18px; text-align: center; }
+      .delete-dialog-icon { display: grid; width: 48px; height: 48px; margin: 0 auto 15px; border-radius: 50%; place-items: center; color: #a9433e; background: #f8e9e7; font-size: 22px; font-weight: 800; }
+      .delete-dialog-content p { margin: 9px 0 0; color: #718278; font-size: 13px; line-height: 1.55; }
+      .delete-dialog-content strong { color: #10261d; }
+      .delete-dialog menu { padding: 15px 20px 20px; border-top: 1px solid #e5ebe6; background: #f7f9f7; }
+      .delete-dialog menu button { min-width: 105px; }
+      .delete-dialog .confirm-delete { color: #f4f8f5; background: #ad403a; }
+      .delete-dialog .confirm-delete:hover { background: #92342f; }
+      .account-settings { margin-top: 20px; }
+      .account-settings p { max-width: 680px; color: #718278; font-size: 12px; line-height: 1.55; }
+      .delete-account-button { padding: 9px 12px; border: 1px solid #efd7d4; border-radius: 8px; color: #a9433e; background: #fdf7f6; font-weight: 800; cursor: pointer; }
+      .delete-account-button:hover { border-color: #c0524d; background: #f8e9e7; }
       .empty-collection { padding: 42px 15px; text-align: center; color: #718278; }
       .empty-collection strong { display: block; margin-bottom: 7px; color: #10261d; font-size: 16px; }
-      .toast { position: fixed; right: 24px; bottom: 24px; z-index: 10; max-width: 320px; padding: 14px 18px; border-radius: 10px; color: #fff; background: #10261d; box-shadow: 0 12px 30px #10261d40; font-weight: 700; transform: translateY(120px); opacity: 0; transition: .25s ease; }
+      .toast { position: fixed; right: 24px; bottom: 24px; z-index: 10; max-width: 320px; padding: 14px 18px; border-radius: 10px; color: #f4f8f5; background: #10261d; box-shadow: 0 12px 30px #10261d40; font-weight: 700; transform: translateY(120px); opacity: 0; transition: .25s ease; }
       .toast.show { transform: translateY(0); opacity: 1; }
       .add-button.celebrate { animation: pop .45s ease; }
       .tile { overflow: hidden; flex: 0 0 auto; }
-      .tile img { width: 100%; height: 100%; object-fit: contain; background: #fff; }
+      .tile img { width: 100%; height: 100%; object-fit: contain; background: #fbfcfa; }
       .tile.has-image { cursor: zoom-in; transition: transform .12s ease, box-shadow .12s ease; }
       .tile.has-image:hover { box-shadow: 0 5px 12px #10261d2b; transform: scale(1.08); }
       .tile.has-image:focus-visible { outline: 3px solid #e8b84c; outline-offset: 2px; }
@@ -77,30 +118,44 @@
       .image-dialog { width: min(92vw, 720px); }
       .image-dialog-content { position: relative; display: grid; min-height: 460px; padding: 18px 18px 64px; place-items: center; overflow: hidden; border-radius: 10px; background: #f4f7f4; }
       .image-dialog-content img { display: block; width: 100%; height: 390px; object-fit: contain; }
-      .image-dialog .gallery-arrow { position: absolute; bottom: 11px; z-index: 2; display: grid; width: 38px; height: 38px; padding: 0; border: 2px solid #fff; border-radius: 50%; place-items: center; color: #fff; background: #147a47; box-shadow: 0 3px 10px #10261d33; font-size: 28px; cursor: pointer; transition: background .12s ease, transform .12s ease; }
+      .image-dialog .gallery-arrow { position: absolute; bottom: 11px; z-index: 2; display: grid; width: 38px; height: 38px; padding: 0; border: 2px solid #f4f8f5; border-radius: 50%; place-items: center; color: #f4f8f5; background: #147a47; box-shadow: 0 3px 10px #10261d33; font-size: 28px; cursor: pointer; transition: background .12s ease, transform .12s ease; }
       .image-dialog .gallery-arrow.previous { left: calc(50% - 86px); }
       .image-dialog .gallery-arrow.next { right: calc(50% - 86px); }
       .image-dialog .gallery-arrow:hover:not(:disabled) { background: #0b3523; transform: scale(1.06); }
       .image-dialog .gallery-arrow:disabled { visibility: hidden; }
       .image-counter { position: absolute; bottom: 20px; left: 50%; min-width: 62px; color: #0b3523; font-size: 11px; font-weight: 800; text-align: center; transform: translateX(-50%); }
-      .image-close { position: absolute; top: 10px; right: 12px; z-index: 3; padding: 5px 9px; border: 0; border-radius: 50%; color: #fff; background: #0b3523cc; font-size: 20px; cursor: pointer; }
+      .image-close { position: absolute; top: 10px; right: 12px; z-index: 3; padding: 5px 9px; border: 0; border-radius: 50%; color: #f4f8f5; background: #0b3523cc; font-size: 20px; cursor: pointer; }
       #mix-donut { position: relative; border: 0; }
-      #mix-donut::before { position: absolute; inset: 18px; border-radius: 50%; background: #fff; content: ""; }
-      #mix-donut small, #mix-donut { isolation: isolate; }
-      #mix-donut small { position: relative; z-index: 1; }
+      #mix-donut::before { position: absolute; inset: 18px; border-radius: 50%; background: #fbfcfa; content: ""; }
+      #mix-donut { isolation: isolate; }
+      .mix .mix-content { display: grid; gap: 18px; justify-items: center; }
+      .mix-total { display: block; margin-top: 5px; color: #718278; font-size: 11px; }
+      #mix-donut { width: 126px; height: 126px; text-align: center; line-height: 1.05; }
+      #mix-donut::before { inset: 21px; }
+      .mix-donut-label { position: absolute; inset: 0; z-index: 1; display: grid; align-content: center; justify-items: center; pointer-events: none; }
+      #mix-donut strong { display: block; font-size: 18px; }
+      #mix-donut small { display: block; margin-top: 4px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; }
+      .mix-legend { width: 100%; margin: 0; line-height: 1.5; }
+      .mix-row { display: grid; grid-template-columns: 9px minmax(0, 1fr) auto; gap: 9px; align-items: center; padding: 10px 0; border-top: 1px solid #e5ebe6; }
+      .mix-swatch { width: 9px; height: 9px; border-radius: 50%; background: #147a47; }
+      .mix-swatch.minifigure { background: #e8b84c; }
+      .mix-label { min-width: 0; color: #63776b; font-size: 12px; }
+      .mix-value { color: #10261d; text-align: right; }
+      .mix-value b, .mix-value small { display: block; }
+      .mix-value small { margin-top: 1px; color: #85958b; }
       .marketplace-panel { margin-bottom: 20px; }
       .marketplace-panel > header { align-items: flex-start; gap: 20px; }
       .marketplace-panel > header p:last-child { max-width: 680px; margin: 6px 0 0; color: #718278; font-size: 12px; line-height: 1.5; }
       .marketplace-card { display: grid; grid-template-columns: 46px minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 16px; border: 1px solid #e5ebe6; border-radius: 11px; background: #fbfdfb; }
-      .marketplace-logo { display: grid; width: 46px; height: 46px; border-radius: 10px; place-items: center; color: #fff; background: #713d9b; font: 800 15px Manrope, sans-serif; }
+      .marketplace-logo { display: grid; width: 46px; height: 46px; border-radius: 10px; place-items: center; color: #f4f8f5; background: #713d9b; font: 800 15px Manrope, sans-serif; }
       .marketplace-details strong, .marketplace-details small { display: block; }
       .marketplace-details small { margin-top: 4px; line-height: 1.45; }
       .connection-status { color: #87681e; }
       .connection-status.connected { color: #147a47; }
       .connection-status.error { color: #c0524d; }
       .marketplace-actions { display: flex; gap: 7px; }
-      .marketplace-actions button { padding: 9px 11px; border: 1px solid #d9e4dc; border-radius: 7px; color: #52665b; background: #fff; font-size: 11px; font-weight: 800; cursor: pointer; }
-      .marketplace-actions .connect-marketplace { border-color: #147a47; color: #fff; background: #147a47; }
+      .marketplace-actions button { padding: 9px 11px; border: 1px solid #d9e4dc; border-radius: 7px; color: #52665b; background: #fbfcfa; font-size: 11px; font-weight: 800; cursor: pointer; }
+      .marketplace-actions .connect-marketplace { border-color: #147a47; color: #f4f8f5; background: #147a47; }
       .marketplace-actions button:disabled { cursor: wait; opacity: .55; }
       .seller-portfolio { margin-bottom: 20px; }
       .seller-listings { display: grid; }
@@ -132,15 +187,19 @@
         <section class="stats"><article><p>SETS OWNED</p><strong id="set-count">0</strong><span id="set-detail">Start your collection</span></article><article><p>MINIFIGURES</p><strong id="minifigure-count">0</strong><span id="minifigure-detail">Add figures you own</span></article><article><p>ITEMS ADDED</p><strong id="item-count">0</strong><span id="item-detail">Your collection is ready</span></article><article><p>MOST VALUABLE</p><strong id="best-value">$0.00</strong><span id="best-item">No items yet</span></article></section>
         <section class="panel marketplace-panel" id="marketplaces"><header><div><p class="eyebrow">LINKED SELLING ACCOUNTS</p><h2>Bring your store into legofolio</h2><p>Connect a marketplace where individual sellers list LEGO. Its inventory stays separate from your acquired collection and matched set listings can power catalog comparisons.</p></div></header><article class="marketplace-card"><span class="marketplace-logo">BO</span><div class="marketplace-details"><strong>Brick Owl</strong><small id="brickowl-status" class="connection-status">Not connected</small><small id="brickowl-summary">Connect a seller account with a read-only API key.</small></div><div class="marketplace-actions"><button id="connect-brickowl" class="connect-marketplace" type="button">Connect</button><button id="sync-brickowl" type="button" hidden>Sync inventory</button><button id="disconnect-brickowl" type="button" hidden>Disconnect</button></div></article></section>
         <section class="panel seller-portfolio" id="seller-portfolio"><header><div><p class="eyebrow">YOUR SELLING PORTFOLIO</p><h2>Listings from linked marketplaces</h2></div><small id="seller-listing-summary">Connect a seller account to import its listings.</small></header><div class="seller-listings" id="seller-listings"><div class="empty-collection"><strong>No seller listings yet</strong><span>Your linked marketplace inventory will appear here.</span></div></div></section>
-        <section class="layout"><section class="panel" id="holdings"><header><div><p class="eyebrow">YOUR ACQUIRED COLLECTION</p><h2>Sets and minifigures you own</h2></div><button id="add-from-empty" type="button" hidden disabled>Add item +</button></header><div id="holdings-list"></div></section><aside><section class="panel" id="watchlist"><header><div><p class="eyebrow">ON YOUR RADAR</p><h2>Watchlist</h2></div></header><div id="watchlist-list"></div></section><section class="panel mix"><p class="eyebrow">BY CATEGORY</p><h2>Collection mix</h2><div class="mix-content"><div class="donut" id="mix-donut">0<small>%</small></div><p>● Sets <b id="set-mix">0%</b><br />● Minifigures <b id="minifigure-mix">0%</b></p></div></section></aside></section>
+        <section class="layout"><section class="panel" id="holdings"><header><div><p class="eyebrow">YOUR ACQUIRED COLLECTION</p><h2>Sets and minifigures you own</h2></div><button id="add-from-empty" type="button" hidden disabled>Add item +</button></header><div id="holdings-list"></div></section><aside><section class="panel" id="watchlist"><header><div><p class="eyebrow">ON YOUR RADAR</p><h2>Watchlist</h2></div></header><div id="watchlist-list"></div></section><section class="panel mix"><p class="eyebrow">BY ESTIMATED VALUE</p><h2>Collection mix</h2><small class="mix-total" id="mix-total-value">$0.00 total</small><div class="mix-content"><div class="donut" id="mix-donut" role="img" aria-label="No valued collection items"><span class="mix-donut-label"><strong>0%</strong><small>allocated</small></span></div><div class="mix-legend"><div class="mix-row"><span class="mix-swatch"></span><span class="mix-label">Sets</span><span class="mix-value"><b id="set-mix">0%</b><small id="set-mix-value">$0.00</small></span></div><div class="mix-row"><span class="mix-swatch minifigure"></span><span class="mix-label">Minifigures</span><span class="mix-value"><b id="minifigure-mix">0%</b><small id="minifigure-mix-value">$0.00</small></span></div></div></div></section></aside></section>
+        <section class="panel account-settings"><p class="eyebrow">ACCOUNT & PRIVACY</p><h2>Your account</h2><p>You can permanently delete your account, collection, saved history, and connected marketplace information.</p><button class="delete-account-button" id="delete-account" type="button">Delete my account</button></section>
       </main>
     </div>
     <dialog id="brickowl-dialog"><form id="brickowl-form"><h2>Connect Brick Owl</h2><p class="brickowl-help">In your Brick Owl seller account, open the <a href="https://www.brickowl.com/api_docs" target="_blank" rel="noopener noreferrer">API page</a> and create a key with only user-details and inventory-reading access. Do not enable orders or inventory editing.</p><label>Brick Owl API key<input id="brickowl-api-key" type="password" autocomplete="off" required /></label><label>Store currency<input id="brickowl-currency" value="USD" minlength="3" maxlength="3" pattern="[A-Za-z]{3}" required /></label><label class="share-checkbox"><input id="brickowl-share-public" type="checkbox" checked /><span>Include my public store listings in legofolio price comparisons. Only listing data is shared; the API key is never exposed.</span></label><p class="lookup-result" id="brickowl-result" role="status"></p><menu><button id="cancel-brickowl" type="button">Cancel</button><button id="save-brickowl" type="submit">Connect and sync</button></menu></form></dialog>
     <dialog id="dialog"><form><h2>Add to collection</h2><label>Set or minifigure name / number<input id="set-number" placeholder="Example: AT-AT, 75313, or Darth Vader" autocomplete="off" required /></label><button class="lookup-button" id="lookup-set" type="button">Search LEGO</button><p class="lookup-result" id="lookup-result" role="status"></p><div class="lookup-results" id="lookup-results" hidden></div><label>Selected item<input id="new-name" readonly /></label><label>What you paid<input id="purchase-price" type="number" min="0" step="0.01" placeholder="Your cost basis" required /></label><label>Current estimated value<input id="new-value" type="number" min="0" step="0.01" placeholder="What it is worth now" required /></label><menu><button id="cancel-add" type="button">Cancel</button><button id="save-set" type="submit" disabled>Add item</button></menu></form></dialog>
     <dialog class="image-dialog" id="image-dialog"><div class="image-dialog-content"><button class="image-close" id="image-close" type="button" aria-label="Close photos">×</button><button class="gallery-arrow previous" id="image-previous" type="button" aria-label="Previous photo">‹</button><img id="gallery-image" alt="" /><button class="gallery-arrow next" id="image-next" type="button" aria-label="Next photo">›</button><span class="image-counter" id="image-counter">1 / 1</span></div></dialog>
+    <dialog class="delete-dialog" id="delete-dialog"><form id="delete-form"><div class="delete-dialog-content"><span class="delete-dialog-icon" aria-hidden="true">!</span><h2>Remove from collection?</h2><p><strong id="delete-item-name">This item</strong> will be removed from your portfolio. This action cannot be undone.</p></div><menu><button id="cancel-delete" type="button">Keep item</button><button class="confirm-delete" id="confirm-delete" type="submit">Remove item</button></menu></form></dialog>
     <dialog id="edit-dialog"><form id="edit-form"><h2>Edit collection item</h2><label>Item<input id="edit-name" readonly /></label><label>What you paid<input id="edit-purchase-price" type="number" min="0" step="0.01" required /></label><label>Current estimated value<input id="edit-current-value" type="number" min="0" step="0.01" required /></label><p class="lookup-result" id="edit-result" role="status"></p><menu><button id="cancel-edit" type="button">Cancel</button><button id="save-edit" type="submit">Save changes</button></menu></form></dialog>
     <dialog class="chart-dialog" id="chart-dialog"><form method="dialog"><div class="chart-dialog-header"><div><h2>Collection performance</h2><p>Return compared with your cost basis</p></div><button class="chart-close" value="close" aria-label="Close chart">✕</button></div><div class="chart-summary"><strong id="detail-value">$0.00</strong><span id="detail-change">$0.00 (0.0%)</span></div><div class="chart-periods" aria-label="Chart time period"><button class="chart-period" type="button" data-period="1D">1D</button><button class="chart-period" type="button" data-period="1W">1W</button><button class="chart-period" type="button" data-period="1M">1M</button><button class="chart-period" type="button" data-period="3M">3M</button><button class="chart-period" type="button" data-period="YTD">YTD</button><button class="chart-period" type="button" data-period="1Y">1Y</button><button class="chart-period" type="button" data-period="5Y">5Y</button><button class="chart-period" type="button" data-period="10Y">10Y</button><button class="chart-period" type="button" data-period="20Y">20Y</button><button class="chart-period active" type="button" data-period="ALL">ALL</button></div><div class="chart-stage"><svg viewBox="0 0 700 280" preserveAspectRatio="none" role="img" aria-label="Detailed portfolio return"><path id="detail-area" d="M0 260 L700 260 L700 280 L0 280Z"/><path id="detail-line" d="M0 260 L700 260"/><circle id="detail-dot" cx="700" cy="260" r="6"/></svg><p class="chart-empty" id="chart-empty">Add or update collection values to build history.</p></div></form></dialog>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <dialog class="chart-dialog" id="set-chart-dialog"><form method="dialog"><div class="chart-dialog-header"><div><h2 id="set-chart-name">Set performance</h2><p id="set-chart-subtitle">Marketplace price history</p></div><button class="chart-close" value="close" aria-label="Close set chart">✕</button></div><div class="chart-summary"><strong id="set-detail-value">$0.00</strong><span id="set-detail-change">No history yet</span></div><div class="chart-periods" aria-label="Set chart time period"><button class="set-chart-period chart-period" type="button" data-period="1D">1D</button><button class="set-chart-period chart-period" type="button" data-period="1W">1W</button><button class="set-chart-period chart-period" type="button" data-period="1M">1M</button><button class="set-chart-period chart-period" type="button" data-period="3M">3M</button><button class="set-chart-period chart-period" type="button" data-period="YTD">YTD</button><button class="set-chart-period chart-period" type="button" data-period="1Y">1Y</button><button class="set-chart-period chart-period" type="button" data-period="5Y">5Y</button><button class="set-chart-period chart-period" type="button" data-period="10Y">10Y</button><button class="set-chart-period chart-period" type="button" data-period="20Y">20Y</button><button class="set-chart-period chart-period active" type="button" data-period="ALL">ALL</button></div><div class="chart-stage" id="set-chart-stage"><svg viewBox="0 0 700 280" preserveAspectRatio="none" role="img" aria-label="Set marketplace price history"><path id="set-detail-area" d="M0 260 L700 260 L700 280 L0 280Z"/><path id="set-detail-line" d="M0 260 L700 260"/><circle id="set-detail-dot" cx="700" cy="260" r="6"/><line class="chart-scrub-line" id="set-scrub-line" x1="0" y1="15" x2="0" y2="265"/><circle class="chart-scrub-dot" id="set-scrub-dot" cx="0" cy="0" r="6"/></svg><div class="chart-tooltip" id="set-chart-tooltip" hidden><strong></strong><span></span></div><p class="chart-empty" id="set-chart-empty">Not enough real price history for this period yet.</p></div></form></dialog>
+    <dialog class="delete-dialog" id="delete-account-dialog"><form id="delete-account-form"><div class="delete-dialog-content"><span class="delete-dialog-icon" aria-hidden="true">!</span><h2>Permanently delete account?</h2><p>This removes your collection and connected marketplace information. It cannot be undone.</p><label>Type DELETE to confirm<input id="delete-account-confirmation" autocomplete="off" required /></label><p class="lookup-result" id="delete-account-result" role="status"></p></div><menu><button id="cancel-delete-account" type="button">Keep account</button><button class="confirm-delete" id="confirm-delete-account" type="submit">Delete forever</button></menu></form></dialog>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
     <script src="collection.js"></script>

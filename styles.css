@@ -6,7 +6,7 @@
   --ink: #152c39;
   --muted: #667985;
   --line: #dce4e8;
-  --surface: #ffffff;
+  --surface: #fbfcfa;
   --background: #f6f8f9;
   --danger: #c4413a;
   --success: #23845f;
@@ -49,7 +49,7 @@ a {
   padding: 48px clamp(40px, 6vw, 96px);
   flex-direction: column;
   overflow: hidden;
-  color: white;
+  color: #f4f8f5;
   background:
     radial-gradient(circle at 15% 20%, rgba(49, 143, 90, 0.38), transparent 32%),
     linear-gradient(145deg, #075b38, #023922 72%, #022d1b);
@@ -83,7 +83,7 @@ a {
   width: fit-content;
   align-items: center;
   gap: 12px;
-  color: white;
+  color: #f4f8f5;
   font-family: "Manrope", sans-serif;
   font-size: 21px;
   font-weight: 800;
@@ -202,6 +202,7 @@ a {
 }
 
 .google-button,
+.apple-button,
 .submit-button {
   display: flex;
   width: 100%;
@@ -218,8 +219,21 @@ a {
 .google-button {
   border: 1px solid var(--line);
   color: var(--ink);
-  background: white;
+  background: #fbfcfa;
 }
+
+.apple-button {
+  margin-top: 10px;
+  border: 1px solid #26352e;
+  color: #f4f8f5;
+  background: #18241e;
+}
+
+.apple-button svg { width: 21px; height: 21px; }
+.apple-button:hover { border-color: #31483c; background: #223229; box-shadow: 0 6px 18px rgba(20, 44, 35, .14); transform: translateY(-1px); }
+.google-button:disabled, .apple-button:disabled { cursor: wait; opacity: .65; transform: none; }
+.oauth-terms { margin: 12px 10px 0; color: var(--muted); text-align: center; font-size: 11px; line-height: 1.5; }
+.oauth-terms a { color: var(--ink); font-weight: 700; }
 
 .google-button svg {
   width: 21px;
@@ -299,7 +313,7 @@ a {
 
 .input-wrap input:focus {
   border-color: var(--blue);
-  background: white;
+  background: #fbfcfa;
   box-shadow: 0 0 0 3px rgba(40, 119, 232, 0.11);
 }
 
@@ -415,7 +429,7 @@ a:hover {
 .submit-button {
   margin-top: 22px;
   border: 0;
-  color: white;
+  color: #f4f8f5;
   background: var(--blue);
   box-shadow: 0 10px 24px rgba(40, 119, 232, 0.2);
 }
